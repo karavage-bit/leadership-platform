@@ -145,6 +145,68 @@ export function useStudentData(): UseStudentDataReturn {
     }
   }, [])
   
+  // Load inventory items
+  const loadInventoryItems = useCallback(async (studentId: string) => {
+    try {
+      const { data } = await supabase
+        .from('placement_inventory')
+        .select('item_type, quantity')
+        .eq('student_id', studentId)
+        .gt('quantity', 0)
+      
+      if (data) {
+        setInventoryItems(data.map(item => ({
+          type: item.item_type,
+          count: item.quantity
+        })))
+      }
+    } catch (e) {
+      console.error('Error loading inventory:', e)
+    }
+  }, [supabase])
+  
+  // Load placed items
+  const loadPlacedItems = useCallback(async (studentId: string) => {
+    try {
+      const { data } = await supabase
+        .from('world_placements')
+        .select('*')
+        .eq('student_id', studentId)
+      
+      if (data) {
+        setPlacedItems(data.map(item => ({
+          id: item.id,
+          type: item.item_type,
+          variant: item.item_variant || 0,
+          x: item.pos_x,
+          y: item.pos_y,
+          z: item.pos_z,
+          rotation: item.rotation_y || 0,
+          memory: item.earned_description,
+          earnedFrom: item.earned_from
+        })))
+      }
+    } catch (e) {
+      console.error('Error loading placed items:', e)
+    }
+  }, [supabase])
+  
+  // Load discovered secrets
+  const loadDiscoveredSecrets = useCallback(async (studentId: string) => {
+    try {
+      const { data } = await supabase
+        .from('discovered_secrets')
+        .select('secret_name')
+        .eq('student_id', studentId)
+      
+      if (data) {
+        setDiscoveredSecrets(data.map(s => s.secret_name))
+      }
+    } catch (e) {
+      console.error('Error loading secrets:', e)
+    }
+  }, [supabase])
+
   // Load connection map data
   const loadConnectionMapData = useCallback(async (classId: string, currentUserId: string) => {
     try {
@@ -344,7 +406,10 @@ export function useStudentData(): UseStudentDataReturn {
         loadTeacherChallenges(userData!.class_id, userId!),
         loadDiscoveries(userData!.class_id, userId!),
         loadJournalData(userId!),
-        loadConnectionMapData(userData!.class_id, userId!)
+        loadConnectionMapData(userData!.class_id, userId!),
+        loadInventoryItems(userId!),
+        loadPlacedItems(userId!),
+        loadDiscoveredSecrets(userId!)
       ])
       
     } catch (err) {
@@ -353,7 +418,7 @@ export function useStudentData(): UseStudentDataReturn {
     } finally {
       setLoading(false)
     }
-  }, [router, supabase, loadTeacherChallenges, loadDiscoveries, loadJournalData, loadConnectionMapData])
+  }, [router, supabase, loadTeacherChallenges, loadDiscoveries, loadJournalData, loadConnectionMapData, loadInventoryItems, loadPlacedItems, loadDiscoveredSecrets])
 
   // Logout
   const handleLogout = useCallback(async () => {

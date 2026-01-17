@@ -1,7 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { TreePine, Flower2, Building2, Link2, Gem, HelpCircle } from 'lucide-react'
+import { TreePine, Flower2, Building2, Link2, Gem, HelpCircle, Hammer, Package } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import type { WorldData, PlacedItem, InventoryItem } from '../types'
 
@@ -75,6 +76,49 @@ export default function WorldTab({
         </div>
       </div>
       
+      {/* Build Inventory Panel */}
+      {inventoryItems.length > 0 && (
+        <motion.div 
+          className="card p-4 border-yellow-500/30 bg-gradient-to-r from-yellow-900/20 to-surface-900"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-yellow-400 flex items-center gap-2">
+              <Package size={16} />
+              Items Ready to Place
+            </h3>
+            <div className="text-xs text-surface-400">Press P in world to build</div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {inventoryItems.map((item, i) => (
+              <div 
+                key={i}
+                className="flex items-center gap-2 px-3 py-2 bg-surface-800 rounded-lg"
+              >
+                <span className="text-lg">
+                  {item.type === 'tree' && '🌲'}
+                  {item.type === 'flower' && '🌸'}
+                  {item.type === 'tower' && '🏛️'}
+                  {item.type === 'crystal' && '💎'}
+                  {item.type === 'stone' && '🪨'}
+                </span>
+                <span className="font-bold text-white">×{item.count}</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* No items prompt */}
+      {inventoryItems.length === 0 && (
+        <div className="card p-4 border-dashed border-surface-600 text-center">
+          <Hammer size={24} className="mx-auto mb-2 text-surface-500" />
+          <p className="text-surface-400 text-sm">Complete activities to earn building items!</p>
+          <p className="text-surface-500 text-xs mt-1">Do Nows → Flowers | Scenarios → Trees | Challenges → Towers</p>
+        </div>
+      )}
+
       {/* Resource Summary */}
       <div className="card p-4">
         <h3 className="text-sm font-semibold text-surface-300 mb-3">Your Resources</h3>

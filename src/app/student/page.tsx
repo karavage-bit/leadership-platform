@@ -76,16 +76,39 @@ export default function StudentDashboard() {
   const [showBrainstorm, setShowBrainstorm] = useState(false)
   const [showDailyUnmask, setShowDailyUnmask] = useState(false)
 
+  // Add reward to inventory
+  const addToInventory = async (itemType: string) => {
+    if (!user?.id) return
+    try {
+      // Check if item exists in inventory
+      const res = await fetch('/api/inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          studentId: user.id, 
+          itemType,
+          earnedFrom: 'lesson_completion',
+          earnedDescription: `Completed ${lesson?.skill_name || 'activity'}`
+        })
+      })
+      if (res.ok) loadData() // Refresh to get updated inventory
+    } catch (e) {
+      console.error('Failed to add inventory:', e)
+    }
+  }
+
   // Completion handlers
-  const onDoNowComplete = () => {
+  const onDoNowComplete = async () => {
     updateProgress({ do_now_complete: true, status: 'in_progress' })
     updateWorld({ flowers: (world?.flowers || 0) + 1 })
+    await addToInventory('flower')
     setShowDoNow(false)
   }
 
-  const onScenarioComplete = () => {
+  const onScenarioComplete = async () => {
     updateProgress({ scenario_complete: true })
     updateWorld({ trees: (world?.trees || 0) + 1 })
+    await addToInventory('tree')
     setShowScenario(false)
     setShowChallenge(true)
   }
