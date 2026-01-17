@@ -25,6 +25,16 @@ const ChallengeSubmissionModal = dynamic(() => import('@/components/ChallengeSub
 const GatewayChallenge = dynamic(() => import('@/components/GatewayChallenge'), { ssr: false })
 const DailyUnmask = dynamic(() => import('@/components/DailyUnmask'), { ssr: false })
 const BrainstormAI = dynamic(() => import('@/components/BrainstormAI'), { ssr: false })
+const DeadServerOnboarding = dynamic(() => import('@/components/DeadServerOnboarding'), { ssr: false })
+const CoreView = dynamic(() => import('@/components/CoreView'), { ssr: false })
+const NexusView = dynamic(() => import('@/components/NexusView'), { ssr: false })
+const StreakDisplay = dynamic(() => import('@/components/StreakDisplay'), { ssr: false })
+const PrivateNotes = dynamic(() => import('@/components/PrivateNotes'), { ssr: false })
+const LofiPlayer = dynamic(() => import('@/components/LofiPlayer'), { ssr: false })
+const GhostMode = dynamic(() => import('@/components/GhostMode'), { ssr: false })
+const AvatarCustomization = dynamic(() => import('@/components/AvatarCustomization'), { ssr: false })
+const SpotifyProgressCards = dynamic(() => import('@/components/SpotifyProgressCards'), { ssr: false })
+const TimelineMemoryMap = dynamic(() => import('@/components/TimelineMemoryMap'), { ssr: false })
 
 // Phase metadata
 const phaseNames = {
@@ -68,12 +78,17 @@ export default function StudentDashboard() {
   const [activeTab, setActiveTab] = useState<StudentTab>('home')
   const [showWelcome, setShowWelcome] = useState(false)
 
-  // Check for welcome popup on mount
+  // Check for welcome popup and onboarding on mount
   React.useEffect(() => {
     const shouldShowWelcome = localStorage.getItem('leadership_show_welcome')
     if (shouldShowWelcome === 'true' && user?.name) {
       setShowWelcome(true)
       localStorage.removeItem('leadership_show_welcome')
+    }
+    // Check if first time user (show Dead Server onboarding)
+    const hasSeenOnboarding = localStorage.getItem('radiance_onboarding_complete')
+    if (!hasSeenOnboarding && user?.id) {
+      setShowOnboarding(true)
     }
   }, [user])
   
@@ -85,6 +100,12 @@ export default function StudentDashboard() {
   const [showGateway, setShowGateway] = useState(false)
   const [showBrainstorm, setShowBrainstorm] = useState(false)
   const [showDailyUnmask, setShowDailyUnmask] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showCoreView, setShowCoreView] = useState(false)
+  const [showNexusView, setShowNexusView] = useState(false)
+  const [showNotes, setShowNotes] = useState(false)
+  const [showAvatar, setShowAvatar] = useState(false)
+  const [showProgress, setShowProgress] = useState(false)
 
   // Add reward to inventory
   const addToInventory = async (itemType: string) => {
@@ -195,6 +216,9 @@ export default function StudentDashboard() {
               {isOnline ? <Wifi size={14} /> : <WifiOff size={14} />}
               {isOnline ? 'Online' : 'Offline'}
             </div>
+            
+            {/* Streak Display */}
+            {user?.id && <StreakDisplay studentId={user.id} />}
             
             {/* World Items Count */}
             <div className="streak-counter text-xs">
@@ -351,6 +375,27 @@ export default function StudentDashboard() {
         <Lightbulb size={20} />
       </motion.button>
 
+      {/* Core/Nexus Quick Access */}
+      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 flex gap-2 z-40">
+        <motion.button
+          onClick={() => setShowCoreView(true)}
+          className="px-4 py-2 bg-blue-600/80 hover:bg-blue-500 text-white rounded-xl backdrop-blur-sm text-sm"
+          whileHover={{ scale: 1.05 }}
+        >
+          🔮 My Core
+        </motion.button>
+        <motion.button
+          onClick={() => setShowNexusView(true)}
+          className="px-4 py-2 bg-purple-600/80 hover:bg-purple-500 text-white rounded-xl backdrop-blur-sm text-sm"
+          whileHover={{ scale: 1.05 }}
+        >
+          🌐 Class Nexus
+        </motion.button>
+      </div>
+
+      {/* Lofi Player */}
+      <LofiPlayer />
+
       {/* Modals */}
       <AnimatePresence>
         {showDoNow && (
@@ -425,6 +470,53 @@ export default function StudentDashboard() {
           rippleCount={dailyUnmaskData.rippleCount}
           onContinue={() => setShowDailyUnmask(false)}
         />
+      )}
+
+      {/* Dead Server Onboarding */}
+      {showOnboarding && (
+        <DeadServerOnboarding
+          onComplete={() => {
+            setShowOnboarding(false)
+            localStorage.setItem('radiance_onboarding_complete', 'true')
+          }}
+        />
+      )}
+
+      {/* Core View Modal */}
+      {showCoreView && user?.id && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl h-[80vh] relative">
+            <button
+              onClick={() => setShowCoreView(false)}
+              className="absolute top-4 right-4 z-10 p-2 bg-zinc-800 rounded-full text-white hover:bg-zinc-700"
+            >
+              ✕
+            </button>
+            <CoreView studentId={user.id} />
+          </div>
+        </div>
+      )}
+
+      {/* Nexus View Modal */}
+      {showNexusView && user?.class_id && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl h-[80vh] relative">
+            <button
+              onClick={() => setShowNexusView(false)}
+              className="absolute top-4 right-4 z-10 p-2 bg-zinc-800 rounded-full text-white hover:bg-zinc-700"
+            >
+              ✕
+            </button>
+            <NexusView classId={user.class_id} studentId={user.id} />
+          </div>
+        </div>
+      )}
+
+      {/* Ghost Mode in World Tab */}
+      {user?.id && user?.class_id && activeTab === 'world' && (
+        <div className="fixed top-24 right-4 z-30">
+          <GhostMode studentId={user.id} classId={user.class_id} />
+        </div>
       )}
 
       {/* Brainstorm AI Modal */}

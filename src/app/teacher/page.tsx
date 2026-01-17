@@ -11,6 +11,8 @@ import {
   BarChart3, Calendar, Filter, Search, RefreshCw, Plus, Edit3,
   Brain, Globe, Activity, Zap, Target, FileText, Bot
 } from 'lucide-react'
+import TeacherClassSettings from '@/components/TeacherClassSettings'
+import TeacherAnalytics from '@/components/TeacherAnalytics'
 
 interface ClassData {
   id: string
@@ -519,6 +521,11 @@ function OverviewTab({ currentLesson, students, doNowStats, pendingReviews, sele
         <StatCard icon={Award} label="Pending Reviews" value={pendingReviews} color="creation" />
         <StatCard icon={TrendingUp} label="Course Progress" value={`${Math.round(((currentLesson?.id || 1) / 45) * 100)}%`} color="community" progress={((currentLesson?.id || 1) / 45) * 100} />
       </div>
+
+      {/* Enhanced Analytics Dashboard */}
+      {selectedClass && (
+        <TeacherAnalytics classId={selectedClass.id} />
+      )}
 
       <div className="card p-6">
         <h3 className="font-semibold text-surface-100 mb-4 flex items-center gap-2">
@@ -1782,6 +1789,11 @@ function SettingsTab({ selectedClass, classes }: { selectedClass: ClassData | nu
   return (
     <motion.div key="settings" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
       <h2 className="text-2xl font-bold text-surface-100">Settings</h2>
+
+      {/* Class Settings - AI Mode, Difficulty, etc */}
+      {selectedClass && (
+        <TeacherClassSettings classId={selectedClass.id} />
+      )}
 
       <div className="card p-6">
         <h3 className="font-semibold text-surface-100 mb-4">Class Codes</h3>
