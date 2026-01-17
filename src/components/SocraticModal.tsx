@@ -197,12 +197,10 @@ export default function SocraticModal({
   }, [input, loading, messages, responseCount, type, lesson, userId, classId, batteryLevel, classSettings, MIN_RESPONSES, supabase])
 
   const handleComplete = async () => {
-    // Use atomic server-side completion
+    // SECURE: Server derives student_id from JWT, controls energy values
     const { data, error } = await supabase.rpc('complete_step', {
-      p_student_id: userId,
       p_lesson_id: lesson?.id,
-      p_step_type: type,
-      p_energy_earned: 15
+      p_step_type: type
     })
 
     if (error) {

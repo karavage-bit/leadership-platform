@@ -2,27 +2,47 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 // ============================================
-// SUPABASE CLIENT (Lazy Singleton)
+// SUPABASE CLIENTS
 // ============================================
 
-let _supabase: SupabaseClient | null = null
-
-export function getServerSupabase(): SupabaseClient {
-  if (_supabase) return _supabase
-  
+/**
+ * Service role client - ONLY for server-only operations
+ * NEVER use this for user-driven actions
+ */
+export function getServiceSupabase(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   
   if (!url || !key) {
-    throw new Error(
-      'FATAL: Missing Supabase configuration. ' +
-      'Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.'
-    )
+    throw new Error('Missing Supabase service configuration')
   }
   
-  _supabase = createClient(url, key)
-  return _supabase
+  return createClient(url, key)
 }
+
+/**
+ * User-scoped Supabase client - uses JWT from request
+ * This respects RLS policies and provides secure user context
+ */
+export function getUserSupabase(request: NextRequest): SupabaseClient {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
+  if (!url || !anonKey) {
+    throw new Error('Missing Supabase configuration')
+  }
+  
+  const authHeader = request.headers.get('Authorization')
+  
+  return createClient(url, anonKey, {
+    global: {
+      headers: authHeader ? { Authorization: authHeader } : {}
+    }
+  })
+}
+
+// Backward compatibility alias
+export const getServerSupabase = getServiceSupabase
 
 // ============================================
 // AUTH TYPES
@@ -37,64 +57,41 @@ export interface AuthResult {
 }
 
 // ============================================
-// AUTH VALIDATION
+// SECURE AUTH VALIDATION (JWT-based)
 // ============================================
 
 /**
- * Validates user from request.
- * 
- * SECURITY NOTE: This implementation trusts client-provided IDs.
- * This is acceptable for teacher-supervised classroom use where:
- * 1. Teachers control physical access to devices
- * 2. Students use shared classroom computers
- * 3. The threat model is curious students, not external attackers
- * 
- * For public deployment, implement proper session-based auth.
+ * Validates user from JWT session - SECURE
+ * Extracts user ID from cryptographically verified token
+ * NEVER trusts client-provided IDs
  */
 export async function validateUser(request: NextRequest): Promise<AuthResult> {
   try {
-    const supabase = getServerSupabase()
+    const supabase = getUserSupabase(request)
     
-    // Get user info from request body or query params
-    const url = new URL(request.url)
-    let userId = url.searchParams.get('studentId') || url.searchParams.get('userId')
+    // Get user from JWT - this is cryptographically verified
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
     
-    // If POST/PATCH, also check body
-    if (!userId && (request.method === 'POST' || request.method === 'PATCH')) {
-      try {
-        const body = await request.clone().json()
-        userId = body.studentId || body.student_id || body.userId || body.user_id || body.teacherId || body.teacher_id
-      } catch {
-        // Body might not be JSON
-      }
+    if (authError || !user) {
+      return { authenticated: false, error: 'Invalid or expired session' }
     }
     
-    if (!userId) {
-      return { authenticated: false, error: 'No user identifier provided' }
-    }
-    
-    // Basic UUID format validation
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-    if (!uuidRegex.test(userId)) {
-      return { authenticated: false, error: 'Invalid user identifier format' }
-    }
-    
-    // Verify user exists in database
-    const { data: user, error } = await supabase
+    // Get additional user data (role, class)
+    const { data: userData, error: dbError } = await supabase
       .from('users')
       .select('id, role, class_id')
-      .eq('id', userId)
+      .eq('id', user.id)
       .single()
     
-    if (error || !user) {
-      return { authenticated: false, error: 'User not found' }
+    if (dbError || !userData) {
+      return { authenticated: false, error: 'User profile not found' }
     }
     
     return {
       authenticated: true,
-      userId: user.id,
-      role: user.role as 'student' | 'teacher',
-      classId: user.class_id
+      userId: user.id, // Crypto-verified from JWT
+      role: userData.role as 'student' | 'teacher',
+      classId: userData.class_id
     }
   } catch (error) {
     console.error('[AUTH] Validation error:', error instanceof Error ? error.message : 'Unknown')
@@ -103,42 +100,92 @@ export async function validateUser(request: NextRequest): Promise<AuthResult> {
 }
 
 /**
- * Validates that the requesting user has access to the specified class
+ * Validates teacher role from session
  */
-export async function validateClassAccess(
-  userId: string, 
-  classId: string
-): Promise<boolean> {
-  try {
-    const supabase = getServerSupabase()
-    const { data: user } = await supabase
-      .from('users')
-      .select('class_id')
-      .eq('id', userId)
-      .single()
-    
-    return user?.class_id === classId
-  } catch {
-    return false
+export async function validateTeacher(request: NextRequest): Promise<AuthResult> {
+  const auth = await validateUser(request)
+  
+  if (!auth.authenticated) return auth
+  
+  if (auth.role !== 'teacher') {
+    return { authenticated: false, error: 'Teacher access required' }
   }
+  
+  return auth
 }
 
 /**
- * Validates teacher role for the given userId
+ * Validates student role from session
  */
-export async function validateTeacher(userId: string): Promise<boolean> {
-  try {
-    const supabase = getServerSupabase()
-    const { data: user } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', userId)
+export async function validateStudent(request: NextRequest): Promise<AuthResult> {
+  const auth = await validateUser(request)
+  
+  if (!auth.authenticated) return auth
+  
+  if (auth.role !== 'student') {
+    return { authenticated: false, error: 'Student access required' }
+  }
+  
+  return auth
+}
+
+/**
+ * Validates that the authenticated user has access to the specified class
+ */
+export async function validateClassAccess(
+  request: NextRequest, 
+  classId: string
+): Promise<AuthResult> {
+  const auth = await validateUser(request)
+  
+  if (!auth.authenticated) return auth
+  
+  // Teachers can access classes they own
+  if (auth.role === 'teacher') {
+    const supabase = getUserSupabase(request)
+    const { data: cls } = await supabase
+      .from('classes')
+      .select('id')
+      .eq('id', classId)
+      .eq('teacher_id', auth.userId)
       .single()
     
-    return user?.role === 'teacher'
-  } catch {
-    return false
+    if (!cls) {
+      return { authenticated: false, error: 'Not authorized for this class' }
+    }
   }
+  // Students can only access their own class
+  else if (auth.classId !== classId) {
+    return { authenticated: false, error: 'Not authorized for this class' }
+  }
+  
+  return auth
+}
+
+/**
+ * Validates teacher access to a specific class they own
+ */
+export async function validateTeacherClassAccess(
+  request: NextRequest,
+  classId: string
+): Promise<AuthResult> {
+  const auth = await validateTeacher(request)
+  
+  if (!auth.authenticated) return auth
+  
+  const supabase = getUserSupabase(request)
+  const { data: cls } = await supabase
+    .from('classes')
+    .select('id')
+    .eq('id', classId)
+    .eq('teacher_id', auth.userId)
+    .single()
+  
+  if (!cls) {
+    return { authenticated: false, error: 'Not authorized for this class' }
+  }
+  
+  return { ...auth, classId }
 }
 
 // ============================================
@@ -166,7 +213,7 @@ export function serviceUnavailableResponse(message: string): NextResponse {
 }
 
 // ============================================
-// RATE LIMITING (Serverless-Safe)
+// RATE LIMITING (Serverless-Safe with fallback)
 // ============================================
 
 interface RateLimitEntry {
@@ -174,23 +221,20 @@ interface RateLimitEntry {
   resetAt: number
 }
 
-// In-memory store - acceptable for Vercel as it resets on cold start
-// This provides "best effort" rate limiting, not bulletproof protection
+// In-memory store - best effort for serverless
+// TODO: Replace with Upstash Redis for production
 const rateLimitStore = new Map<string, RateLimitEntry>()
-
-// Maximum entries to prevent memory growth (simple LRU-like behavior)
 const MAX_RATE_LIMIT_ENTRIES = 10000
 
 export interface RateLimitConfig {
-  windowMs: number      // Time window in milliseconds
-  maxRequests: number   // Max requests per window
+  windowMs: number
+  maxRequests: number
 }
 
-// Default configs for different endpoints
 export const RATE_LIMITS = {
-  ai: { windowMs: 60000, maxRequests: 10 },        // 10 AI calls per minute
-  standard: { windowMs: 60000, maxRequests: 60 },  // 60 requests per minute
-  write: { windowMs: 60000, maxRequests: 30 },     // 30 writes per minute
+  ai: { windowMs: 60000, maxRequests: 10 },
+  standard: { windowMs: 60000, maxRequests: 60 },
+  write: { windowMs: 60000, maxRequests: 30 },
 } as const
 
 export function checkRateLimit(
@@ -199,23 +243,16 @@ export function checkRateLimit(
 ): { allowed: boolean; remaining: number; resetIn: number } {
   const now = Date.now()
   
-  // Clean up expired entries if store is getting large
   if (rateLimitStore.size > MAX_RATE_LIMIT_ENTRIES) {
     rateLimitStore.forEach((entry, key) => {
-      if (entry.resetAt < now) {
-        rateLimitStore.delete(key)
-      }
+      if (entry.resetAt < now) rateLimitStore.delete(key)
     })
   }
   
   const entry = rateLimitStore.get(identifier)
   
   if (!entry || entry.resetAt < now) {
-    // New window
-    rateLimitStore.set(identifier, {
-      count: 1,
-      resetAt: now + config.windowMs
-    })
+    rateLimitStore.set(identifier, { count: 1, resetAt: now + config.windowMs })
     return { allowed: true, remaining: config.maxRequests - 1, resetIn: config.windowMs }
   }
   
@@ -250,14 +287,26 @@ export function validateUUID(value: unknown): value is string {
   return uuidRegex.test(value)
 }
 
-export function validateString(value: unknown, maxLength = 10000): value is string {
-  return typeof value === 'string' && value.length > 0 && value.length <= maxLength
+export function validateString(value: unknown, maxLength = 5000): value is string {
+  if (typeof value !== 'string') return false
+  const trimmed = value.trim()
+  return trimmed.length > 0 && trimmed.length <= maxLength
+}
+
+export function validateStepType(value: unknown): value is 'do_now' | 'scenario' | 'challenge' | 'exit_ticket' {
+  return typeof value === 'string' && ['do_now', 'scenario', 'challenge', 'exit_ticket'].includes(value)
+}
+
+export function sanitizeString(str: string): string {
+  return str
+    .replace(/<[^>]*>/g, '') // Strip HTML tags
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control chars
+    .trim()
 }
 
 export function sanitizeForLog(obj: Record<string, unknown>): Record<string, unknown> {
   const sanitized: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(obj)) {
-    // Never log sensitive fields
     if (['password', 'token', 'key', 'secret', 'apiKey'].some(s => key.toLowerCase().includes(s))) {
       sanitized[key] = '[REDACTED]'
     } else if (typeof value === 'string' && value.length > 200) {

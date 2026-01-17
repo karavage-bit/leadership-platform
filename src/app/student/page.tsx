@@ -107,17 +107,15 @@ export default function StudentDashboard() {
   const [showAvatar, setShowAvatar] = useState(false)
   const [showProgress, setShowProgress] = useState(false)
 
-  // SECURE: Use complete_step RPC instead of client-side inventory
-  const completeStep = async (stepType: 'do_now' | 'scenario' | 'challenge' | 'exit_ticket', rewardType: string) => {
-    if (!user?.id || !lesson?.id || !user?.class_id) return
+  // SECURE: Use complete_step RPC (auth.uid() handles identity server-side)
+  const completeStep = async (stepType: 'do_now' | 'scenario' | 'challenge' | 'exit_ticket') => {
+    if (!lesson?.id) return
     try {
       const supabase = (await import('@/lib/supabase/client')).createClient()
+      // Only pass lesson_id and step_type - server derives student_id from JWT
       const { error } = await supabase.rpc('complete_step', {
-        p_student_id: user.id,
         p_lesson_id: lesson.id,
-        p_class_id: user.class_id,
-        p_step_type: stepType,
-        p_reward_type: rewardType
+        p_step_type: stepType
       })
       if (error) console.error('complete_step error:', error)
       loadData() // Refresh to get updated state
@@ -144,12 +142,12 @@ export default function StudentDashboard() {
 
   // Completion handlers
   const onDoNowComplete = async () => {
-    await completeStep('do_now', 'flower')
+    await completeStep('do_now')
     setShowDoNow(false)
   }
 
   const onScenarioComplete = async () => {
-    await completeStep('scenario', 'tree')
+    await completeStep('scenario')
     setShowScenario(false)
     setShowChallenge(true)
   }
