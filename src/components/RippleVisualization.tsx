@@ -69,7 +69,7 @@ export default function RippleVisualization({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             className="bg-surface-900 rounded-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden shadow-2xl border border-surface-700 flex flex-col"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-cyan-500/20 to-blue-500/20 p-5 border-b border-surface-700 flex-shrink-0">

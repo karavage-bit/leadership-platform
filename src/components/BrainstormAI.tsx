@@ -142,7 +142,7 @@ export default function BrainstormAI({ isOpen, onClose, onActionPlan, studentSki
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
         className="bg-surface-900 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden border border-purple-500/30 flex flex-col"
       >
         {/* Header */}

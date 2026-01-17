@@ -669,7 +669,7 @@ function ReviewModal({ review, onClose, onComplete }: { review: SubmissionData; 
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-surface-900 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-surface-900 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
         <div className="p-4 border-b border-surface-800 flex items-center justify-between sticky top-0 bg-surface-900 z-10">
           <div>
             <h2 className="font-semibold text-surface-100">{review.student?.name}'s Challenge</h2>
@@ -1048,7 +1048,7 @@ function CurriculumTab({ classId, currentLessonId }: { classId: string | undefin
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               className="bg-surface-900 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               <div className="p-4 border-b border-surface-800 flex items-center justify-between sticky top-0 bg-surface-900 z-10">
                 <div>
@@ -1224,7 +1224,7 @@ function DoNowTab({ classId, students }: { classId: string | undefined; students
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               className="bg-surface-900 rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               <div className="p-4 border-b border-surface-800 flex items-center justify-between">
                 <div>
@@ -1373,7 +1373,7 @@ function ConversationsTab({ classId, students }: { classId: string | undefined; 
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               className="bg-surface-900 rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               <div className="p-4 border-b border-surface-800 flex items-center justify-between">
                 <div>
@@ -1531,7 +1531,7 @@ function WorldsTab({ classId, students }: { classId: string | undefined; student
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               className="bg-surface-900 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               <div className="p-4 border-b border-surface-800 flex items-center justify-between">
                 <h2 className="font-semibold text-surface-100">{selectedStudent.name}'s World</h2>

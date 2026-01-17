@@ -394,7 +394,7 @@ export default function StudentDashboard() {
       {/* Gateway Challenge */}
       {showGateway && (
         <GatewayChallenge 
-          onComplete={async (data) => {
+          onComplete={async (data: Record<string, unknown>) => {
             await fetch('/api/gateway', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -422,7 +422,7 @@ export default function StudentDashboard() {
         isOpen={showBrainstorm}
         onClose={() => setShowBrainstorm(false)}
         studentSkills={studentSkills}
-        onActionPlan={(plan) => {
+        onActionPlan={(plan: unknown) => {
           console.log('Action plan committed:', plan)
           setShowBrainstorm(false)
         }}

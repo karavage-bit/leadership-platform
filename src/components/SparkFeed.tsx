@@ -379,7 +379,7 @@ function CreateSparkModal({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             className="bg-surface-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-surface-700"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 p-4 border-b border-surface-700">
