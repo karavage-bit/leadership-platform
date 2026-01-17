@@ -74,6 +74,20 @@ https://leadership-platform-flame.vercel.app/
 ## COMPLETED FRONTEND COMPONENTS ✅
 - /workspace/code/components/SocraticModal.tsx (voice support, fixed stale state)
 - /workspace/code/components/TeacherClassSettings.tsx (teacher controls)
+- /workspace/code/components/DeadServerOnboarding.tsx (narrative hook)
+- /workspace/code/components/CoreView.tsx (3D private sanctuary)
+- /workspace/code/components/NexusView.tsx (3D shared world)
+- /workspace/code/components/PrivateNotes.tsx (journal space)
+- /workspace/code/components/StreakDisplay.tsx (streak mechanics)
+- /workspace/code/components/LofiPlayer.tsx (ambient audio)
+- /workspace/code/components/TimelineMemoryMap.tsx (slider reflection)
+- /workspace/code/components/GhostMode.tsx (hide from Nexus)
+- /workspace/code/components/AvatarCustomization.tsx (Core customization)
+- /workspace/code/components/SpotifyProgressCards.tsx (wrapped-style stats)
+- /workspace/code/components/TeacherAnalytics.tsx (enhanced dashboard)
+
+## ADDITIONAL DB MIGRATIONS ✅
+- add_ghost_and_avatar_columns (is_ghost, ghost_cooldown_end, avatar_config)
 
 ## DOCUMENTATION ✅
 - /workspace/docs/PROJECT_RADIANCE_IMPLEMENTATION.md
