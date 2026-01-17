@@ -116,17 +116,50 @@ export async function validateTeacher(request: NextRequest): Promise<AuthResult>
 
 /**
  * Validates student role from session
+ * Falls back to localStorage-based auth for PIN-login students
  */
 export async function validateStudent(request: NextRequest): Promise<AuthResult> {
+  // First try JWT-based auth
   const auth = await validateUser(request)
   
-  if (!auth.authenticated) return auth
-  
-  if (auth.role !== 'student') {
-    return { authenticated: false, error: 'Student access required' }
+  if (auth.authenticated) {
+    if (auth.role !== 'student') {
+      return { authenticated: false, error: 'Student access required' }
+    }
+    return auth
   }
   
-  return auth
+  // Fallback: Check for student_id in body (for PIN-login students without JWT)
+  try {
+    const body = await request.clone().json()
+    const studentId = body?.student_id
+    
+    if (!studentId || !validateUUID(studentId)) {
+      return { authenticated: false, error: 'Invalid or expired session' }
+    }
+    
+    // Verify student exists in database using service role
+    const supabase = getServiceSupabase()
+    const { data: userData, error: dbError } = await supabase
+      .from('users')
+      .select('id, role, class_id')
+      .eq('id', studentId)
+      .eq('role', 'student')
+      .single()
+    
+    if (dbError || !userData) {
+      return { authenticated: false, error: 'Student not found' }
+    }
+    
+    return {
+      authenticated: true,
+      userId: userData.id,
+      role: 'student',
+      classId: userData.class_id
+    }
+  } catch {
+    return { authenticated: false, error: 'Authentication failed' }
+  }
 }
 
 /**
