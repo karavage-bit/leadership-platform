@@ -8,7 +8,8 @@ import {
   Users, BookOpen, AlertTriangle, ChevronRight, Check, X,
   LogOut, Clock, Award, MessageSquare, TrendingUp, Eye,
   Sparkles, Bell, Settings, ChevronDown, Play, Pause,
-  BarChart3, Calendar, Filter, Search, RefreshCw, Plus, Edit3
+  BarChart3, Calendar, Filter, Search, RefreshCw, Plus, Edit3,
+  Brain, Globe, Activity, Zap, Target, FileText, Bot
 } from 'lucide-react'
 
 interface ClassData {
@@ -68,7 +69,7 @@ export default function TeacherDashboard() {
   const [crisisAlerts, setCrisisAlerts] = useState<CrisisAlert[]>([])
   const [doNowStats, setDoNowStats] = useState<DoNowStats>({ completed: 0, total: 0 })
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'students' | 'curriculum' | 'alerts' | 'settings'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'students' | 'curriculum' | 'donow' | 'conversations' | 'worlds' | 'metrics' | 'alerts' | 'settings'>('overview')
   const [showClassDropdown, setShowClassDropdown] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -346,11 +347,15 @@ export default function TeacherDashboard() {
 
         {/* Tabs */}
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex gap-1 -mb-px">
+          <div className="flex gap-1 -mb-px overflow-x-auto">
             <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={BarChart3} label="Overview" />
-            <TabButton active={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} icon={Award} label="Reviews" badge={pendingReviews.length} />
             <TabButton active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={Users} label="Students" />
             <TabButton active={activeTab === 'curriculum'} onClick={() => setActiveTab('curriculum')} icon={BookOpen} label="Curriculum" />
+            <TabButton active={activeTab === 'donow'} onClick={() => setActiveTab('donow')} icon={Zap} label="Do Now" />
+            <TabButton active={activeTab === 'conversations'} onClick={() => setActiveTab('conversations')} icon={Bot} label="AI Chats" />
+            <TabButton active={activeTab === 'worlds'} onClick={() => setActiveTab('worlds')} icon={Globe} label="Worlds" />
+            <TabButton active={activeTab === 'metrics'} onClick={() => setActiveTab('metrics')} icon={Activity} label="Metrics" />
+            <TabButton active={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} icon={Award} label="Reviews" badge={pendingReviews.length} />
             <TabButton active={activeTab === 'alerts'} onClick={() => setActiveTab('alerts')} icon={AlertTriangle} label="Alerts" badge={crisisAlerts.length} urgent={crisisAlerts.length > 0} />
             <TabButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={Settings} label="Settings" />
           </div>
@@ -389,6 +394,35 @@ export default function TeacherDashboard() {
           {activeTab === 'curriculum' && (
             <CurriculumTab 
               classId={selectedClass?.id}
+              currentLessonId={currentLesson?.id || 1}
+            />
+          )}
+
+          {activeTab === 'donow' && (
+            <DoNowTab 
+              classId={selectedClass?.id}
+              students={students}
+            />
+          )}
+
+          {activeTab === 'conversations' && (
+            <ConversationsTab 
+              classId={selectedClass?.id}
+              students={students}
+            />
+          )}
+
+          {activeTab === 'worlds' && (
+            <WorldsTab 
+              classId={selectedClass?.id}
+              students={students}
+            />
+          )}
+
+          {activeTab === 'metrics' && (
+            <MetricsTab 
+              classId={selectedClass?.id}
+              students={students}
               currentLessonId={currentLesson?.id || 1}
             />
           )}
@@ -1064,6 +1098,682 @@ function CurriculumTab({ classId, currentLessonId }: { classId: string | undefin
           </motion.div>
         )}
       </AnimatePresence>
+    </motion.div>
+  )
+}
+
+// ==================== DO NOW TAB ====================
+function DoNowTab({ classId, students }: { classId: string | undefined; students: StudentData[] }) {
+  const [sessions, setSessions] = useState<any[]>([])
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [selectedSession, setSelectedSession] = useState<any | null>(null)
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+
+  useEffect(() => {
+    loadSessions()
+  }, [classId, selectedDate])
+
+  const loadSessions = async () => {
+    if (!classId) return
+    setLoading(true)
+    const { data } = await supabase
+      .from('do_now_sessions')
+      .select('*')
+      .eq('class_id', classId)
+      .gte('created_at', `${selectedDate}T00:00:00`)
+      .lte('created_at', `${selectedDate}T23:59:59`)
+      .order('created_at', { ascending: false })
+
+    const sessionsWithStudents = await Promise.all((data || []).map(async (session) => {
+      const student = students.find(s => s.id === session.student_id)
+      return { ...session, student }
+    }))
+    setSessions(sessionsWithStudents)
+    setLoading(false)
+  }
+
+  const studentMap = new Map(students.map(s => [s.id, s]))
+  const completedStudents = new Set(sessions.map(s => s.student_id))
+
+  return (
+    <motion.div key="donow" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h2 className="text-2xl font-bold text-surface-100">Do Now Manager</h2>
+        <div className="flex items-center gap-3">
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="input"
+          />
+          <span className="badge badge-care">{sessions.length}/{students.length} completed</span>
+        </div>
+      </div>
+
+      {/* Completion Overview */}
+      <div className="card p-4">
+        <h3 className="font-semibold text-surface-100 mb-3">Completion Status</h3>
+        <div className="flex flex-wrap gap-2">
+          {students.map(student => (
+            <div
+              key={student.id}
+              className={`px-3 py-2 rounded-lg text-sm ${
+                completedStudents.has(student.id)
+                  ? 'bg-care/20 text-care border border-care/30'
+                  : 'bg-surface-800 text-surface-500'
+              }`}
+            >
+              {student.name} {completedStudents.has(student.id) && '✓'}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Session List */}
+      <div className="space-y-4">
+        <h3 className="font-semibold text-surface-100">Conversations ({sessions.length})</h3>
+        {loading ? (
+          <div className="card p-8 text-center">
+            <div className="animate-spin w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full mx-auto" />
+          </div>
+        ) : sessions.length === 0 ? (
+          <div className="card p-8 text-center">
+            <Zap size={48} className="mx-auto mb-4 text-surface-600" />
+            <p className="text-surface-400">No Do Now sessions for this date</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-4">
+            {sessions.map(session => (
+              <div
+                key={session.id}
+                className="card p-4 cursor-pointer hover:border-primary-500/30"
+                onClick={() => setSelectedSession(session)}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-surface-100">{session.student?.name}</span>
+                  <span className="text-xs text-surface-500">
+                    {new Date(session.created_at).toLocaleTimeString()}
+                  </span>
+                </div>
+                <p className="text-surface-400 text-sm line-clamp-2">
+                  {session.messages?.[0]?.content || 'No content'}
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-xs text-surface-500">{session.messages?.length || 0} messages</span>
+                  {session.completed && <span className="badge badge-care text-xs">Complete</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Session Detail Modal */}
+      <AnimatePresence>
+        {selectedSession && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+            onClick={() => setSelectedSession(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-surface-900 rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-surface-800 flex items-center justify-between">
+                <div>
+                  <h2 className="font-semibold text-surface-100">{selectedSession.student?.name}'s Do Now</h2>
+                  <p className="text-sm text-surface-500">{new Date(selectedSession.created_at).toLocaleString()}</p>
+                </div>
+                <button onClick={() => setSelectedSession(null)} className="text-surface-500 hover:text-surface-300">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-4 overflow-y-auto max-h-[60vh] space-y-3">
+                {selectedSession.messages?.map((msg: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className={`p-3 rounded-xl ${
+                      msg.role === 'assistant'
+                        ? 'bg-primary-500/10 border border-primary-500/20'
+                        : 'bg-surface-800'
+                    }`}
+                  >
+                    <span className="text-xs text-surface-500 uppercase">
+                      {msg.role === 'assistant' ? '🤖 AI' : '👤 Student'}
+                    </span>
+                    <p className="text-surface-200 mt-1 whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+// ==================== CONVERSATIONS TAB ====================
+function ConversationsTab({ classId, students }: { classId: string | undefined; students: StudentData[] }) {
+  const [conversations, setConversations] = useState<any[]>([])
+  const [selectedConvo, setSelectedConvo] = useState<any | null>(null)
+  const [filterType, setFilterType] = useState<string>('all')
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+
+  useEffect(() => {
+    loadConversations()
+  }, [classId])
+
+  const loadConversations = async () => {
+    if (!classId) return
+    setLoading(true)
+    
+    // Load from multiple conversation sources
+    const [doNowRes, scenarioRes] = await Promise.all([
+      supabase.from('do_now_sessions').select('*').eq('class_id', classId).order('created_at', { ascending: false }).limit(50),
+      supabase.from('scenario_sessions').select('*').eq('class_id', classId).order('created_at', { ascending: false }).limit(50)
+    ])
+
+    const allConvos = [
+      ...(doNowRes.data || []).map(c => ({ ...c, type: 'do_now' })),
+      ...(scenarioRes.data || []).map(c => ({ ...c, type: 'scenario' }))
+    ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+    const convosWithStudents = allConvos.map(convo => ({
+      ...convo,
+      student: students.find(s => s.id === convo.student_id)
+    }))
+
+    setConversations(convosWithStudents)
+    setLoading(false)
+  }
+
+  const filtered = filterType === 'all' 
+    ? conversations 
+    : conversations.filter(c => c.type === filterType)
+
+  return (
+    <motion.div key="conversations" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h2 className="text-2xl font-bold text-surface-100">AI Conversations</h2>
+        <div className="flex gap-2">
+          <button onClick={() => setFilterType('all')} className={`btn btn-sm ${filterType === 'all' ? 'btn-primary' : 'btn-secondary'}`}>All</button>
+          <button onClick={() => setFilterType('do_now')} className={`btn btn-sm ${filterType === 'do_now' ? 'btn-primary' : 'btn-secondary'}`}>Do Now</button>
+          <button onClick={() => setFilterType('scenario')} className={`btn btn-sm ${filterType === 'scenario' ? 'btn-primary' : 'btn-secondary'}`}>Scenarios</button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="card p-12 text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full mx-auto" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="card p-12 text-center">
+          <Bot size={48} className="mx-auto mb-4 text-surface-600" />
+          <h3 className="text-xl font-semibold text-surface-300 mb-2">No conversations yet</h3>
+          <p className="text-surface-500">Student AI conversations will appear here.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map(convo => (
+            <div
+              key={convo.id}
+              className="card p-4 cursor-pointer hover:border-primary-500/30"
+              onClick={() => setSelectedConvo(convo)}
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-community flex items-center justify-center text-white font-bold">
+                    {convo.student?.name?.[0] || '?'}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-surface-100">{convo.student?.name || 'Unknown'}</h3>
+                    <p className="text-sm text-surface-500">
+                      {convo.messages?.length || 0} messages • {new Date(convo.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`badge ${convo.type === 'do_now' ? 'badge-care' : 'badge-courage'}`}>
+                    {convo.type === 'do_now' ? 'Do Now' : 'Scenario'}
+                  </span>
+                  <ChevronRight size={16} className="text-surface-500" />
+                </div>
+              </div>
+              {convo.messages?.[convo.messages.length - 1] && (
+                <p className="text-surface-400 text-sm mt-3 line-clamp-2 pl-13">
+                  {convo.messages[convo.messages.length - 1].content}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Conversation Modal */}
+      <AnimatePresence>
+        {selectedConvo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+            onClick={() => setSelectedConvo(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-surface-900 rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-surface-800 flex items-center justify-between">
+                <div>
+                  <h2 className="font-semibold text-surface-100">{selectedConvo.student?.name}'s Conversation</h2>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`badge text-xs ${selectedConvo.type === 'do_now' ? 'badge-care' : 'badge-courage'}`}>
+                      {selectedConvo.type === 'do_now' ? 'Do Now' : 'Scenario'}
+                    </span>
+                    <span className="text-xs text-surface-500">{new Date(selectedConvo.created_at).toLocaleString()}</span>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedConvo(null)} className="text-surface-500 hover:text-surface-300">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-4 overflow-y-auto max-h-[60vh] space-y-3">
+                {selectedConvo.messages?.map((msg: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className={`p-3 rounded-xl ${
+                      msg.role === 'assistant'
+                        ? 'bg-primary-500/10 border border-primary-500/20'
+                        : 'bg-surface-800'
+                    }`}
+                  >
+                    <span className="text-xs text-surface-500 uppercase">
+                      {msg.role === 'assistant' ? '🤖 Socratic AI' : '👤 Student'}
+                    </span>
+                    <p className="text-surface-200 mt-1 whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+// ==================== WORLDS TAB ====================
+function WorldsTab({ classId, students }: { classId: string | undefined; students: StudentData[] }) {
+  const [worldStates, setWorldStates] = useState<Record<string, any>>({})
+  const [inventories, setInventories] = useState<Record<string, any[]>>({})
+  const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+
+  useEffect(() => {
+    loadWorlds()
+  }, [classId, students])
+
+  const loadWorlds = async () => {
+    if (!classId) return
+    setLoading(true)
+    
+    const studentIds = students.map(s => s.id)
+    
+    const [worldsRes, inventoryRes] = await Promise.all([
+      supabase.from('world_states').select('*').in('student_id', studentIds),
+      supabase.from('student_inventory').select('*').in('student_id', studentIds)
+    ])
+
+    const worldMap: Record<string, any> = {}
+    worldsRes.data?.forEach(w => { worldMap[w.student_id] = w })
+    setWorldStates(worldMap)
+
+    const invMap: Record<string, any[]> = {}
+    inventoryRes.data?.forEach(inv => {
+      if (!invMap[inv.student_id]) invMap[inv.student_id] = []
+      invMap[inv.student_id].push(inv)
+    })
+    setInventories(invMap)
+    setLoading(false)
+  }
+
+  const getWorldScore = (studentId: string) => {
+    const world = worldStates[studentId] || {}
+    const inv = inventories[studentId] || []
+    return (world.trees || 0) + (world.tower || 0) + inv.length
+  }
+
+  return (
+    <motion.div key="worlds" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h2 className="text-2xl font-bold text-surface-100">Student Worlds</h2>
+        <button onClick={loadWorlds} className="btn btn-secondary btn-sm">
+          <RefreshCw size={16} /> Refresh
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="card p-12 text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full mx-auto" />
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {students.map(student => {
+            const world = worldStates[student.id] || {}
+            const inv = inventories[student.id] || []
+            const score = getWorldScore(student.id)
+
+            return (
+              <div
+                key={student.id}
+                className="card p-4 cursor-pointer hover:border-primary-500/30"
+                onClick={() => setSelectedStudent(student)}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-community flex items-center justify-center text-white font-bold">
+                      {student.name[0]}
+                    </div>
+                    <span className="font-semibold text-surface-100">{student.name}</span>
+                  </div>
+                  <span className="badge badge-primary">{score} items</span>
+                </div>
+                
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  <div className="p-2 bg-surface-800 rounded-lg">
+                    <span className="text-xl">🌳</span>
+                    <p className="text-xs text-surface-500 mt-1">{world.trees || 0}</p>
+                  </div>
+                  <div className="p-2 bg-surface-800 rounded-lg">
+                    <span className="text-xl">🏛️</span>
+                    <p className="text-xs text-surface-500 mt-1">{world.tower || 0}</p>
+                  </div>
+                  <div className="p-2 bg-surface-800 rounded-lg">
+                    <span className="text-xl">🌸</span>
+                    <p className="text-xs text-surface-500 mt-1">{inv.filter(i => i.item_type === 'flower').length}</p>
+                  </div>
+                  <div className="p-2 bg-surface-800 rounded-lg">
+                    <span className="text-xl">📦</span>
+                    <p className="text-xs text-surface-500 mt-1">{inv.length}</p>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Student World Detail Modal */}
+      <AnimatePresence>
+        {selectedStudent && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+            onClick={() => setSelectedStudent(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-surface-900 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-surface-800 flex items-center justify-between">
+                <h2 className="font-semibold text-surface-100">{selectedStudent.name}'s World</h2>
+                <button onClick={() => setSelectedStudent(null)} className="text-surface-500 hover:text-surface-300">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-4 space-y-4">
+                <div>
+                  <h3 className="font-semibold text-surface-200 mb-2">World State</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-surface-800 rounded-lg flex items-center gap-3">
+                      <span className="text-2xl">🌳</span>
+                      <div>
+                        <p className="text-surface-400 text-xs">Trees</p>
+                        <p className="text-surface-100 font-bold">{worldStates[selectedStudent.id]?.trees || 0}</p>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-surface-800 rounded-lg flex items-center gap-3">
+                      <span className="text-2xl">🏛️</span>
+                      <div>
+                        <p className="text-surface-400 text-xs">Towers</p>
+                        <p className="text-surface-100 font-bold">{worldStates[selectedStudent.id]?.tower || 0}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-surface-200 mb-2">Inventory ({inventories[selectedStudent.id]?.length || 0} items)</h3>
+                  <div className="max-h-48 overflow-y-auto space-y-2">
+                    {(inventories[selectedStudent.id] || []).map((item, idx) => (
+                      <div key={idx} className="p-2 bg-surface-800 rounded-lg flex items-center justify-between">
+                        <span className="text-surface-200">{item.item_type}</span>
+                        <span className="text-xs text-surface-500">x{item.quantity || 1}</span>
+                      </div>
+                    ))}
+                    {(!inventories[selectedStudent.id] || inventories[selectedStudent.id].length === 0) && (
+                      <p className="text-surface-500 text-center py-4">No items in inventory</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+// ==================== METRICS TAB ====================
+function MetricsTab({ classId, students, currentLessonId }: { classId: string | undefined; students: StudentData[]; currentLessonId: number }) {
+  const [metrics, setMetrics] = useState<any>({})
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+
+  useEffect(() => {
+    loadMetrics()
+  }, [classId, students])
+
+  const loadMetrics = async () => {
+    if (!classId) return
+    setLoading(true)
+    
+    const studentIds = students.map(s => s.id)
+    const today = new Date().toISOString().split('T')[0]
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+
+    const [
+      doNowTodayRes,
+      doNowWeekRes,
+      challengesRes,
+      lessonsRes,
+      alertsRes,
+      worldsRes
+    ] = await Promise.all([
+      supabase.from('do_now_sessions').select('id').eq('class_id', classId).gte('created_at', `${today}T00:00:00`),
+      supabase.from('do_now_sessions').select('id').eq('class_id', classId).gte('created_at', `${weekAgo}T00:00:00`),
+      supabase.from('challenge_submissions').select('id, review_status, review_score').eq('class_id', classId),
+      supabase.from('student_lessons').select('*').eq('class_id', classId),
+      supabase.from('crisis_alerts').select('id').eq('class_id', classId).eq('status', 'unread'),
+      supabase.from('world_states').select('*').in('student_id', studentIds)
+    ])
+
+    const completedLessons = (lessonsRes.data || []).filter(l => l.status === 'complete').length
+    const totalPossibleLessons = students.length * currentLessonId
+    const avgScore = (challengesRes.data || [])
+      .filter(c => c.review_score)
+      .reduce((acc, c, _, arr) => acc + (c.review_score || 0) / arr.length, 0)
+
+    setMetrics({
+      doNowToday: doNowTodayRes.data?.length || 0,
+      doNowWeek: doNowWeekRes.data?.length || 0,
+      totalChallenges: challengesRes.data?.length || 0,
+      pendingChallenges: (challengesRes.data || []).filter(c => c.review_status === 'pending').length,
+      reviewedChallenges: (challengesRes.data || []).filter(c => c.review_status === 'reviewed').length,
+      avgScore: avgScore.toFixed(1),
+      completedLessons,
+      totalPossibleLessons,
+      completionRate: totalPossibleLessons > 0 ? Math.round((completedLessons / totalPossibleLessons) * 100) : 0,
+      activeAlerts: alertsRes.data?.length || 0,
+      totalWorlds: worldsRes.data?.length || 0
+    })
+    setLoading(false)
+  }
+
+  if (loading) {
+    return (
+      <motion.div key="metrics" className="flex items-center justify-center py-20">
+        <div className="animate-spin w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full" />
+      </motion.div>
+    )
+  }
+
+  return (
+    <motion.div key="metrics" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h2 className="text-2xl font-bold text-surface-100">Class Metrics</h2>
+        <button onClick={loadMetrics} className="btn btn-secondary btn-sm">
+          <RefreshCw size={16} /> Refresh
+        </button>
+      </div>
+
+      {/* Key Stats */}
+      <div className="grid md:grid-cols-4 gap-4">
+        <div className="card p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-care/20 flex items-center justify-center">
+              <Zap className="text-care" size={20} />
+            </div>
+            <span className="text-surface-400 text-sm">Do Now Today</span>
+          </div>
+          <div className="text-3xl font-bold text-surface-100">{metrics.doNowToday}/{students.length}</div>
+          <div className="mt-2 progress-bar">
+            <div className="progress-fill bg-care" style={{ width: `${(metrics.doNowToday / Math.max(students.length, 1)) * 100}%` }} />
+          </div>
+        </div>
+
+        <div className="card p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-creation/20 flex items-center justify-center">
+              <Award className="text-creation" size={20} />
+            </div>
+            <span className="text-surface-400 text-sm">Avg Score</span>
+          </div>
+          <div className="text-3xl font-bold text-surface-100">{metrics.avgScore || '-'}</div>
+          <p className="text-surface-500 text-sm mt-1">of 4.0 mastery</p>
+        </div>
+
+        <div className="card p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Target className="text-primary-400" size={20} />
+            </div>
+            <span className="text-surface-400 text-sm">Completion Rate</span>
+          </div>
+          <div className="text-3xl font-bold text-surface-100">{metrics.completionRate}%</div>
+          <div className="mt-2 progress-bar">
+            <div className="progress-fill bg-primary-500" style={{ width: `${metrics.completionRate}%` }} />
+          </div>
+        </div>
+
+        <div className="card p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-courage/20 flex items-center justify-center">
+              <AlertTriangle className="text-courage" size={20} />
+            </div>
+            <span className="text-surface-400 text-sm">Active Alerts</span>
+          </div>
+          <div className="text-3xl font-bold text-surface-100">{metrics.activeAlerts}</div>
+          <p className="text-surface-500 text-sm mt-1">need attention</p>
+        </div>
+      </div>
+
+      {/* Detailed Stats */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="card p-6">
+          <h3 className="font-semibold text-surface-100 mb-4 flex items-center gap-2">
+            <MessageSquare size={20} className="text-care" />
+            Engagement This Week
+          </h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-surface-400">Do Now Sessions</span>
+              <span className="font-semibold text-surface-100">{metrics.doNowWeek}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-surface-400">Challenge Submissions</span>
+              <span className="font-semibold text-surface-100">{metrics.totalChallenges}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-surface-400">Pending Reviews</span>
+              <span className="font-semibold text-creation">{metrics.pendingChallenges}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-surface-400">Reviewed</span>
+              <span className="font-semibold text-care">{metrics.reviewedChallenges}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="card p-6">
+          <h3 className="font-semibold text-surface-100 mb-4 flex items-center gap-2">
+            <Globe size={20} className="text-community" />
+            World Building
+          </h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-surface-400">Active Worlds</span>
+              <span className="font-semibold text-surface-100">{metrics.totalWorlds}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-surface-400">Students</span>
+              <span className="font-semibold text-surface-100">{students.length}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-surface-400">Current Lesson</span>
+              <span className="font-semibold text-primary-400">#{currentLessonId}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-surface-400">Course Progress</span>
+              <span className="font-semibold text-surface-100">{Math.round((currentLessonId / 45) * 100)}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Student Leaderboard */}
+      <div className="card p-6">
+        <h3 className="font-semibold text-surface-100 mb-4 flex items-center gap-2">
+          <TrendingUp size={20} className="text-creation" />
+          Student Progress Overview
+        </h3>
+        <p className="text-surface-400 text-sm mb-4">
+          Track individual student engagement and completion across all activities.
+        </p>
+        <div className="text-center py-8 text-surface-500">
+          <Activity size={32} className="mx-auto mb-2 opacity-50" />
+          <p>Detailed student analytics coming soon</p>
+        </div>
+      </div>
     </motion.div>
   )
 }
