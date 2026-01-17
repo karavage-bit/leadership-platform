@@ -1,95 +1,95 @@
 {
-  "../node_modules/@react-three/drei/core/VideoTexture.js -> hls.js": {
+  "../../../tmp/leadership-platform/.pnpm/@react-three+drei@9.117.3_@react-three+fiber@8.17.10_@types+react@18.3.12_react-dom@18._42f381e64b326514d49857cec20b7bdd/node_modules/@react-three/drei/core/VideoTexture.js -> hls.js": {
     "id": null,
     "files": []
   },
-  "../node_modules/@react-three/drei/web/FaceLandmarker.js -> @mediapipe/tasks-vision": {
+  "../../../tmp/leadership-platform/.pnpm/@react-three+drei@9.117.3_@react-three+fiber@8.17.10_@types+react@18.3.12_react-dom@18._42f381e64b326514d49857cec20b7bdd/node_modules/@react-three/drei/web/FaceLandmarker.js -> @mediapipe/tasks-vision": {
     "id": null,
     "files": []
   },
-  "../node_modules/@supabase/auth-js/dist/module/lib/helpers.js -> @supabase/node-fetch": {
-    "id": 485,
+  "../../../tmp/leadership-platform/.pnpm/@supabase+auth-js@2.67.3/node_modules/@supabase/auth-js/dist/module/lib/helpers.js -> @supabase/node-fetch": {
+    "id": 955,
     "files": []
   },
-  "../node_modules/@supabase/functions-js/dist/module/helper.js -> @supabase/node-fetch": {
-    "id": 485,
+  "../../../tmp/leadership-platform/.pnpm/@supabase+functions-js@2.4.4/node_modules/@supabase/functions-js/dist/module/helper.js -> @supabase/node-fetch": {
+    "id": 955,
     "files": []
   },
-  "../node_modules/@supabase/realtime-js/dist/module/RealtimeClient.js -> @supabase/node-fetch": {
-    "id": 485,
+  "../../../tmp/leadership-platform/.pnpm/@supabase+realtime-js@2.11.2/node_modules/@supabase/realtime-js/dist/module/RealtimeClient.js -> @supabase/node-fetch": {
+    "id": 955,
     "files": []
   },
-  "../node_modules/@supabase/realtime-js/dist/module/RealtimeClient.js -> ws": {
-    "id": 5223,
+  "../../../tmp/leadership-platform/.pnpm/@supabase+realtime-js@2.11.2/node_modules/@supabase/realtime-js/dist/module/RealtimeClient.js -> ws": {
+    "id": 1639,
     "files": [
-      "static/chunks/223.97fbc89dbe48cc1e.js"
+      "static/chunks/639.e8e783f4312de1ed.js"
     ]
   },
-  "../node_modules/@supabase/storage-js/dist/module/lib/helpers.js -> @supabase/node-fetch": {
-    "id": 485,
+  "../../../tmp/leadership-platform/.pnpm/@supabase+storage-js@2.7.1/node_modules/@supabase/storage-js/dist/module/lib/helpers.js -> @supabase/node-fetch": {
+    "id": 955,
     "files": []
   },
   "app/student/page.tsx -> @/components/BrainstormAI": {
-    "id": 3074,
+    "id": 9481,
     "files": [
-      "static/chunks/74.d5b685e233004614.js"
+      "static/chunks/481.57193f7a75c06fa9.js"
     ]
   },
   "app/student/page.tsx -> @/components/ChallengeSubmissionModal": {
-    "id": 9519,
+    "id": 7674,
     "files": [
-      "static/chunks/519.6418c3cd077882f4.js"
+      "static/chunks/674.581a0a1b134608b1.js"
     ]
   },
   "app/student/page.tsx -> @/components/DailyUnmask": {
-    "id": 3753,
+    "id": 999,
     "files": [
-      "static/chunks/753.63d5b071072388e3.js"
+      "static/chunks/999.92771554120c3e0c.js"
     ]
   },
   "app/student/page.tsx -> @/components/GatewayChallenge": {
-    "id": 4236,
+    "id": 178,
     "files": [
-      "static/chunks/236.0ebfa1dff86d0fd8.js"
+      "static/chunks/178.1c202538ac6243b3.js"
     ]
   },
   "app/student/page.tsx -> @/components/SocraticModal": {
-    "id": 1731,
+    "id": 9171,
     "files": [
-      "static/chunks/731.7fd0f79b503fb25f.js"
+      "static/chunks/171.0d4dc4b59fc5714a.js"
     ]
   },
   "app/student/tabs/DiscoverTab.tsx -> @/components/StudentDiscoveries": {
-    "id": 8298,
+    "id": 5322,
     "files": [
-      "static/chunks/298.73ebbc9add81e8a5.js"
+      "static/chunks/322.6ace8ca25011426c.js"
     ]
   },
   "app/student/tabs/DiscoverTab.tsx -> @/components/TeacherChallenges": {
-    "id": 1522,
+    "id": 7917,
     "files": [
-      "static/chunks/522.eb2202266eaae78f.js"
+      "static/chunks/917.cf4281b315ee23ab.js"
     ]
   },
   "app/student/tabs/ProgressTab.tsx -> @/components/ClassConnectionMap": {
-    "id": 8116,
+    "id": 2631,
     "files": [
-      "static/chunks/116.36687df2fd5cdf52.js"
+      "static/chunks/631.13636683c538772d.js"
     ]
   },
   "app/student/tabs/ProgressTab.tsx -> @/components/GrowthJournal": {
-    "id": 8945,
+    "id": 1846,
     "files": [
-      "static/chunks/945.57d92b11ac51e45f.js"
+      "static/chunks/846.0196cc38ad63c1ba.js"
     ]
   },
   "app/student/tabs/WorldTab.tsx -> @/components/VoxelWorld": {
-    "id": 2113,
+    "id": 1737,
     "files": [
-      "static/chunks/b536a0f1.a0788c622f2cdcb9.js",
-      "static/chunks/0f8af13e.1c384dc93d8326c3.js",
-      "static/chunks/366.c9ce8a6e1a6b0091.js",
-      "static/chunks/113.ec5c5249faebcf75.js"
+      "static/chunks/ce1ab7a9.7e6a4cc2aa44ef48.js",
+      "static/chunks/5aea0aea.771849600f10a3eb.js",
+      "static/chunks/601.6b25b2aee9258a19.js",
+      "static/chunks/737.f43ba8a557790b04.js"
     ]
   }
 }

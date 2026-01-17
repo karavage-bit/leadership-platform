@@ -163,6 +163,7 @@ export default function HomePage() {
       localStorage.setItem('leadership_user_id', userData.id)
       localStorage.setItem('leadership_user_name', userData.name)
       localStorage.setItem('leadership_class_id', userData.class_id)
+      localStorage.setItem('leadership_show_welcome', 'true')
 
       window.location.href = '/student'
     } catch (err: any) {

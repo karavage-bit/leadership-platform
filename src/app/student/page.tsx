@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   LogOut, Wifi, WifiOff, Clock, Sparkles, 
@@ -66,6 +66,16 @@ export default function StudentDashboard() {
 
   // UI state
   const [activeTab, setActiveTab] = useState<StudentTab>('home')
+  const [showWelcome, setShowWelcome] = useState(false)
+
+  // Check for welcome popup on mount
+  React.useEffect(() => {
+    const shouldShowWelcome = localStorage.getItem('leadership_show_welcome')
+    if (shouldShowWelcome === 'true' && user?.name) {
+      setShowWelcome(true)
+      localStorage.removeItem('leadership_show_welcome')
+    }
+  }, [user])
   
   // Modal state
   const [showDoNow, setShowDoNow] = useState(false)
@@ -427,6 +437,50 @@ export default function StudentDashboard() {
           setShowBrainstorm(false)
         }}
       />
+
+      {/* Welcome Popup */}
+      <AnimatePresence>
+        {showWelcome && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowWelcome(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="bg-gradient-to-br from-surface-800 to-surface-900 rounded-2xl p-8 max-w-md text-center border border-surface-700 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <motion.div
+                className="text-6xl mb-4"
+                animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 1.5, repeat: 2 }}
+              >
+                <Sparkles className="w-16 h-16 mx-auto text-primary-400" />
+              </motion.div>
+              <h2 className="text-3xl font-bold text-white mb-2">
+                Hello {user?.name}!
+              </h2>
+              <p className="text-xl text-primary-400 mb-6">Welcome back!</p>
+              <p className="text-surface-400 mb-6">
+                Ready to continue your leadership journey?
+              </p>
+              <motion.button
+                onClick={() => setShowWelcome(false)}
+                className="px-8 py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-xl font-semibold"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Let's Go!
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
