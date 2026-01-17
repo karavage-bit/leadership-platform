@@ -107,39 +107,49 @@ export default function StudentDashboard() {
   const [showAvatar, setShowAvatar] = useState(false)
   const [showProgress, setShowProgress] = useState(false)
 
-  // Add reward to inventory
-  const addToInventory = async (itemType: string) => {
-    if (!user?.id) return
+  // SECURE: Use complete_step RPC instead of client-side inventory
+  const completeStep = async (stepType: 'do_now' | 'scenario' | 'challenge' | 'exit_ticket', rewardType: string) => {
+    if (!user?.id || !lesson?.id || !user?.class_id) return
     try {
-      // Check if item exists in inventory
-      const res = await fetch('/api/inventory', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          studentId: user.id, 
-          itemType,
-          earnedFrom: 'lesson_completion',
-          earnedDescription: `Completed ${lesson?.skill_name || 'activity'}`
-        })
+      const supabase = (await import('@/lib/supabase/client')).createClient()
+      const { error } = await supabase.rpc('complete_step', {
+        p_student_id: user.id,
+        p_lesson_id: lesson.id,
+        p_class_id: user.class_id,
+        p_step_type: stepType,
+        p_reward_type: rewardType
       })
-      if (res.ok) loadData() // Refresh to get updated inventory
+      if (error) console.error('complete_step error:', error)
+      loadData() // Refresh to get updated state
     } catch (e) {
-      console.error('Failed to add inventory:', e)
+      console.error('Failed to complete step:', e)
     }
   }
 
+  // Check battery level for Oxygen Mask rule
+  const [batteryLevel, setBatteryLevel] = React.useState(0)
+  React.useEffect(() => {
+    const checkBattery = async () => {
+      if (!user?.id) return
+      const supabase = (await import('@/lib/supabase/client')).createClient()
+      const { data } = await supabase
+        .from('student_cores')
+        .select('battery_level')
+        .eq('student_id', user.id)
+        .single()
+      if (data) setBatteryLevel(data.battery_level || 0)
+    }
+    checkBattery()
+  }, [user?.id])
+
   // Completion handlers
   const onDoNowComplete = async () => {
-    updateProgress({ do_now_complete: true, status: 'in_progress' })
-    updateWorld({ flowers: (world?.flowers || 0) + 1 })
-    await addToInventory('flower')
+    await completeStep('do_now', 'flower')
     setShowDoNow(false)
   }
 
   const onScenarioComplete = async () => {
-    updateProgress({ scenario_complete: true })
-    updateWorld({ trees: (world?.trees || 0) + 1 })
-    await addToInventory('tree')
+    await completeStep('scenario', 'tree')
     setShowScenario(false)
     setShowChallenge(true)
   }
@@ -385,11 +395,17 @@ export default function StudentDashboard() {
           🔮 My Core
         </motion.button>
         <motion.button
-          onClick={() => setShowNexusView(true)}
-          className="px-4 py-2 bg-purple-600/80 hover:bg-purple-500 text-white rounded-xl backdrop-blur-sm text-sm"
-          whileHover={{ scale: 1.05 }}
+          onClick={() => {
+            if (batteryLevel < 50) {
+              alert('🔋 Oxygen Mask Rule: Reach 50% Core energy before accessing the Nexus. Focus on yourself first!')
+              return
+            }
+            setShowNexusView(true)
+          }}
+          className={`px-4 py-2 ${batteryLevel >= 50 ? 'bg-purple-600/80 hover:bg-purple-500' : 'bg-zinc-600/50 cursor-not-allowed'} text-white rounded-xl backdrop-blur-sm text-sm`}
+          whileHover={{ scale: batteryLevel >= 50 ? 1.05 : 1 }}
         >
-          🌐 Class Nexus
+          🌐 Class Nexus {batteryLevel < 50 && '🔒'}
         </motion.button>
       </div>
 
