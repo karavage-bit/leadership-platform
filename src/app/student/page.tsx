@@ -99,13 +99,16 @@ export default function StudentDashboard() {
       <div className="min-h-screen bg-surface-950 flex items-center justify-center">
         <div className="text-center">
           <motion.div 
-            className="text-5xl mb-4"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="text-6xl mb-6"
+            animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
           >
             🌱
           </motion.div>
-          <p className="text-surface-400">Loading your journey...</p>
+          <div className="loading-dots justify-center mb-4">
+            <span></span><span></span><span></span>
+          </div>
+          <p className="text-surface-400 gradient-text font-medium">Loading your journey...</p>
         </div>
       </div>
     )
@@ -133,7 +136,7 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-surface-950">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-surface-900/95 backdrop-blur-md border-b border-surface-800">
+      <header className="sticky top-0 z-40 glass-card rounded-none border-t-0 border-x-0">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <motion.div 
@@ -161,9 +164,9 @@ export default function StudentDashboard() {
             </div>
             
             {/* World Items Count */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-800 text-xs">
-              <Sparkles size={14} className="text-yellow-400" />
-              <span className="text-surface-200 font-medium">{totalWorldItems}</span>
+            <div className="streak-counter text-xs">
+              <Sparkles size={14} className="streak-fire" />
+              <span className="font-bold">{totalWorldItems}</span>
             </div>
             
             {/* User */}
@@ -422,16 +425,16 @@ function NavButton({
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all relative ${
+      className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all relative hover-scale ${
         active 
-          ? 'text-primary-400 bg-primary-500/10' 
+          ? 'text-primary-400 bg-primary-500/10 tab-glow-active' 
           : 'text-surface-500 hover:text-surface-300'
       }`}
     >
       <Icon size={22} />
       <span className="text-xs font-medium">{label}</span>
       {badge && badge > 0 && (
-        <span className="absolute top-1 right-2 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+        <span className="notification-badge">
           {badge}
         </span>
       )}

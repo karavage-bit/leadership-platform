@@ -350,7 +350,7 @@ export default function HomePage() {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="mb-4 p-3 bg-courage/10 border border-courage/30 rounded-xl text-courage text-sm"
+                  className="mb-4 p-3 bg-courage/10 border border-courage/30 rounded-xl text-courage text-sm error-shake"
                 >
                   {error}
                 </motion.div>
@@ -457,12 +457,7 @@ export default function HomePage() {
                       >
                         {loading ? (
                           <span className="flex items-center gap-2">
-                            <motion.span
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            >
-                              ⏳
-                            </motion.span>
+                            <div className="loading-spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
                             Joining...
                           </span>
                         ) : (
