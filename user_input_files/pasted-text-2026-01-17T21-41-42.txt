@@ -1,0 +1,196 @@
+PROJECT RADIANCE: MASTER DESIGN DOCUMENT (v3.0)
+Launch Strategy: Immediate Full Deployment Core Hook: "The Dead Server" Metaphor
+
+PART 1: THE 5-MINUTE ONBOARDING HOOK
+Goal: Bypass student cynicism immediately. Do not explain the app. Tell a story that explains them.
+
+The Experience: "The Dead Server"
+Before the student sees a dashboard, a menu, or a login screen, they watch a 3-minute cinematic video (or interactive scroll-story).
+
+The Story Script
+(0:00) The Setup
+
+"Imagine a city built entirely on a server. It was perfect. Infinite bandwidth. Perfect weather. Everyone had a connection." "But then, the battery started draining. At first, people just complained. 'Why is the wifi slow?' 'Why are the lights flickering?'" "They blamed the admins. They blamed the software. They shouted at the sky."
+
+(1:30) The Crisis "But the city wasn’t powered by a power plant. It was powered by connection. Every time a citizen solved a problem, created art, or helped a neighbor, they generated a tiny spark. That spark kept the server running." "But slowly, everyone stopped making sparks. They started consuming instead. Watching instead of doing. Commenting instead of creating. Scrolling instead of connecting." "The drain was faster than the charge. And one day... the server went black."
+
+(3:00) The Twist (The AHA Moment) "You aren't just a user in this city." The camera zooms rapidly into a single, dark window in a skyscraper. "You are the Battery." The screen turns black. Then, a single text line appears: "If you don't generate your own light, the world stays dark."
+
+(4:00) The Reveal (The Platform Mechanics) The darkness breaks. A single light turns on—YOUR Core. "This platform is that city. The Core is your mind. If you don't charge it, you go dark. The Nexus is our class. If we don't overflow with energy, the system crashes. There are no teachers here to fix the server. There are no admins. There is only us. And the lights are flickering."
+
+Button appears: [IGNITE THE SYSTEM]
+
+PART 2: EXECUTIVE SUMMARY
+We are launching a "System Stewardship" Architecture immediately.
+
+The "Radiance" Logic
+The platform is a closed-loop energy system.
+
+The "Oxygen Mask" Rule: You cannot help the class (Nexus) until you stabilize yourself (Core).
+
+The "Overflow" Rule: You cannot hoard energy. Once you are stable (100% Battery), all extra effort automatically heals the community.
+
+The "Blight" Consequence: Negativity isn't just a "bad grade." It is visual corruption (fog/static) that physically degrades the shared world for everyone.
+
+PART 3: UX & VISUAL SPECIFICATION (DAY 1 BUILD)
+VIEW A: THE CORE (Private Sanctuary)
+Visual: A high-fidelity isometric room.
+
+State 1 (Low Battery):
+
+Visual: Grey, rainy, static interference.
+
+Avatar: Slumped posture, looking at phone.
+
+Audio: Distant, muffled rain.
+
+UI Text: "Low energy isn't failure. It's information."
+
+State 2 (High Battery):
+
+Visual: Warm, "Golden Hour" lighting.
+
+Avatar: Floating/Meditating or working at a desk.
+
+Audio: Crisp Lo-fi beat.
+
+Unlock: The "Connect" button pulses.
+
+VIEW B: THE NEXUS (The Shared Commons)
+Visual: A massive 3D Constellation of nodes (students) surrounding a Central Spire.
+
+The "Blight" Mechanic:
+
+If Class Average < 50%: The Spire is covered in digital "Vines" or "Glitch Artifacts."
+
+Repair Mode: Students with >100% energy can click "Repair" to burn their own energy to remove vines.
+
+TRANSITION: THE ZOOM
+Action: Clicking "Connect."
+
+Effect: Seamless camera pull-back from the private room -> into the massive network. This physically demonstrates the "Cell to Organism" relationship.
+
+PART 4: TECHNICAL ARCHITECTURE (FULL DEPLOYMENT)
+We are bypassing the phased approach. All systems are live on launch.
+
+1. Database Schema (Supabase)
+This schema is deployed immediately to handle the full energy ecosystem.
+
+SQL
+
+-- 1. THE ENERGY SOURCE (Student State)
+CREATE TABLE student_cores (
+  student_id UUID PRIMARY KEY REFERENCES auth.users(id),
+  class_id UUID REFERENCES classes(id),
+  battery_level INTEGER DEFAULT 0 CHECK (battery_level BETWEEN 0 AND 100),
+  overflow_generated INTEGER DEFAULT 0, -- Lifetime contribution
+  current_state TEXT DEFAULT 'dim', -- 'dim', 'stable', 'radiant'
+  is_locked BOOLEAN GENERATED ALWAYS AS (battery_level < 50) STORED
+);
+
+-- 2. THE SYSTEM HEALTH (Class State)
+CREATE TABLE class_nexus (
+  class_id UUID PRIMARY KEY REFERENCES classes(id),
+  integrity_score INTEGER DEFAULT 0, -- 0-100 Aggregate Health
+  blight_nodes INTEGER DEFAULT 0,    -- Visual corruption count
+  weather_state TEXT DEFAULT 'storm' -- 'storm', 'fog', 'clear', 'aurora'
+);
+
+-- 3. THE CONNECTION BEAMS (Real-time Visualization)
+CREATE TABLE nexus_beams (
+  student_id UUID REFERENCES auth.users(id),
+  class_id UUID REFERENCES classes(id),
+  is_active BOOLEAN DEFAULT FALSE,
+  energy_flow_rate INTEGER DEFAULT 0
+);
+2. The "Atomic Overflow" Engine (RPC Function)
+This logic runs on Day 1. It ensures the "Oxygen Mask" rule is hard-coded physics, not just a suggestion.
+
+SQL
+
+CREATE OR REPLACE FUNCTION process_energy_input(
+  p_student_id UUID,
+  p_energy_amount INTEGER,
+  p_sentiment_score FLOAT
+) RETURNS JSONB AS $$
+DECLARE
+  v_current_battery INTEGER;
+  v_overflow INTEGER := 0;
+  v_class_id UUID;
+BEGIN
+  -- Get current state
+  SELECT battery_level, class_id INTO v_current_battery, v_class_id 
+  FROM student_cores WHERE student_id = p_student_id;
+
+  -- LOGIC 1: NEGATIVITY CAUSES BLIGHT
+  IF p_sentiment_score < -0.5 THEN
+    UPDATE class_nexus SET blight_nodes = blight_nodes + 1 WHERE class_id = v_class_id;
+    RETURN jsonb_build_object('status', 'blighted', 'message', 'Negativity corrupted the Nexus.');
+  END IF;
+
+  -- LOGIC 2: OVERFLOW MECHANIC
+  IF (v_current_battery + p_energy_amount) > 100 THEN
+    v_overflow := (v_current_battery + p_energy_amount) - 100;
+    
+    -- Max Self
+    UPDATE student_cores SET battery_level = 100, current_state = 'radiant' WHERE student_id = p_student_id;
+    
+    -- Heal Nexus
+    UPDATE class_nexus 
+    SET integrity_score = LEAST(integrity_score + v_overflow, 100),
+        blight_nodes = GREATEST(blight_nodes - 1, 0) -- Overflow cleans blight
+    WHERE class_id = v_class_id;
+    
+  ELSE
+    -- Oxygen Mask Phase (Self Only)
+    UPDATE student_cores 
+    SET battery_level = v_current_battery + p_energy_amount,
+        current_state = CASE WHEN (v_current_battery + p_energy_amount) > 50 THEN 'stable' ELSE 'dim' END
+    WHERE student_id = p_student_id;
+  END IF;
+
+  RETURN jsonb_build_object('new_battery', LEAST(v_current_battery + p_energy_amount, 100), 'overflow', v_overflow);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+3. The AI "Iron Wall" Prompt
+The AI is configured immediately as a "Coach," not a "Helper."
+
+System Prompt:
+
+Plaintext
+
+You are the System Guardian.
+Your Goal: Stabilize the student's Core by forcing them to generate their own insight.
+
+RULES:
+1. THE REFUSAL: Never answer a question. Mirror it back. "The system is waiting for YOUR input, not mine."
+2. THE BATTERY CHECK: 
+   - If User Battery < 30%: Be encouraging. "The signal is weak. Let's start small."
+   - If User Battery > 80%: Be challenging. "You have power to spare. Dig deeper."
+3. NO EMPTY PRAISE: Do not say "Good job." Say "System stabilized." or "Connection confirmed." Keep it diegetic.
+PART 5: IMPLEMENTATION CHECKLIST (DAY 1)
+1. The Narrative Layer (The Hook)
+
+[ ] Build the "Dead Server" scroll-story (React + Framer Motion).
+
+[ ] Write the script to match the "Battery" metaphor exactly.
+
+[ ] Test: Ensure the transition from the video ending to the "Core" lighting up is seamless.
+
+2. The Visual Layer (The World)
+
+[ ] Core View: Implement R3F scene with 3 states (Dim, Stable, Radiant).
+
+[ ] Nexus View: Implement the "Spire" and "Beams" visualization.
+
+[ ] The Blight: Create a "Glitch" shader that overlays the Nexus when health is low.
+
+3. The Logic Layer (The Brain)
+
+[ ] Deploy the process_energy_input RPC function.
+
+[ ] Set up the "Iron Wall" AI Prompt in Edge Functions.
+
+[ ] Test: Verify that a student with 40% battery cannot access the Nexus view (The Oxygen Mask Rule).
+
+This is a complete, coherent, and buildable system. It treats the student not as a "learner" to be taught, but as a critical component in a failing system that needs their specific energy to survive.
