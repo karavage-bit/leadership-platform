@@ -235,7 +235,19 @@ export default function HomePage() {
         router.push('/teacher')
       }
     } catch (err: any) {
-      setError(err.message || 'Something went wrong')
+      // Better error messages for common issues
+      const msg = err.message || 'Something went wrong'
+      if (msg.includes('Email not confirmed')) {
+        setError('📧 Please check your email to confirm your account, then try logging in again.')
+      } else if (msg.includes('Invalid login')) {
+        setError('Email or password is incorrect.')
+      } else if (msg.includes('already registered')) {
+        setError('This email is already registered. Try logging in instead.')
+      } else if (msg.includes('row-level security')) {
+        setError('⚠️ Registration temporarily unavailable. Please contact your administrator.')
+      } else {
+        setError(msg)
+      }
     } finally {
       setLoading(false)
     }

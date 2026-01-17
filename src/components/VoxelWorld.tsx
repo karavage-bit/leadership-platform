@@ -1189,7 +1189,23 @@ export default function VoxelWorld({
   return (
     <div className="w-full aspect-video bg-gradient-to-b from-sky-700 via-sky-900 to-slate-950 rounded-2xl overflow-hidden shadow-2xl border border-slate-700 relative group">
       <KeyboardControls map={keyboardMap}>
-        <Canvas shadows camera={{ position: [14, 10, 14], fov: 45 }} gl={{ antialias: true }} dpr={[1, 1.5]}>
+        <Canvas 
+          shadows 
+          camera={{ position: [14, 10, 14], fov: 45 }} 
+          gl={{ antialias: true, powerPreference: 'default', preserveDrawingBuffer: true }} 
+          dpr={[1, 1.5]}
+          onCreated={({ gl }) => {
+            // Handle WebGL context loss gracefully
+            const canvas = gl.domElement
+            canvas.addEventListener('webglcontextlost', (e) => {
+              e.preventDefault()
+              console.log('[VoxelWorld] WebGL context lost, will restore on return')
+            })
+            canvas.addEventListener('webglcontextrestored', () => {
+              console.log('[VoxelWorld] WebGL context restored')
+            })
+          }}
+        >
           <Suspense fallback={null}>
             <WorldScene 
               world={w} 
