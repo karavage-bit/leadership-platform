@@ -29,6 +29,13 @@
     "id": 955,
     "files": []
   },
+  "app/student/page.tsx -> @/components/AvatarCustomization": {
+    "id": 2194,
+    "files": [
+      "static/chunks/285-4c5723b89611ebf3.js",
+      "static/chunks/194.b500f62bcf04295d.js"
+    ]
+  },
   "app/student/page.tsx -> @/components/BrainstormAI": {
     "id": 9481,
     "files": [
@@ -38,7 +45,16 @@
   "app/student/page.tsx -> @/components/ChallengeSubmissionModal": {
     "id": 7674,
     "files": [
-      "static/chunks/674.581a0a1b134608b1.js"
+      "static/chunks/674.1a205c9ca9260cdb.js"
+    ]
+  },
+  "app/student/page.tsx -> @/components/CoreView": {
+    "id": 5729,
+    "files": [
+      "static/chunks/ce1ab7a9.7e6a4cc2aa44ef48.js",
+      "static/chunks/47cd497d.a8b3785c6964e786.js",
+      "static/chunks/532.0778910bdca0f0e8.js",
+      "static/chunks/729.a733047793af8e0b.js"
     ]
   },
   "app/student/page.tsx -> @/components/DailyUnmask": {
@@ -47,17 +63,74 @@
       "static/chunks/999.92771554120c3e0c.js"
     ]
   },
-  "app/student/page.tsx -> @/components/GatewayChallenge": {
-    "id": 178,
+  "app/student/page.tsx -> @/components/DeadServerOnboarding": {
+    "id": 4146,
     "files": [
-      "static/chunks/178.1c202538ac6243b3.js"
+      "static/chunks/146.384ed18319624675.js"
+    ]
+  },
+  "app/student/page.tsx -> @/components/GatewayChallenge": {
+    "id": 3854,
+    "files": [
+      "static/chunks/854.4983dc9b908da1a1.js"
+    ]
+  },
+  "app/student/page.tsx -> @/components/GhostMode": {
+    "id": 4747,
+    "files": [
+      "static/chunks/285-4c5723b89611ebf3.js",
+      "static/chunks/747.7a3513c161b1a6b8.js"
+    ]
+  },
+  "app/student/page.tsx -> @/components/LofiPlayer": {
+    "id": 6645,
+    "files": [
+      "static/chunks/645.60c3638e016902b2.js"
+    ]
+  },
+  "app/student/page.tsx -> @/components/NexusView": {
+    "id": 1801,
+    "files": [
+      "static/chunks/ce1ab7a9.7e6a4cc2aa44ef48.js",
+      "static/chunks/47cd497d.a8b3785c6964e786.js",
+      "static/chunks/532.0778910bdca0f0e8.js",
+      "static/chunks/801.3757b294387c6429.js"
+    ]
+  },
+  "app/student/page.tsx -> @/components/PrivateNotes": {
+    "id": 9875,
+    "files": [
+      "static/chunks/875.ac4cc9b86495a8bb.js"
     ]
   },
   "app/student/page.tsx -> @/components/SocraticModal": {
-    "id": 9171,
+    "id": 5626,
     "files": [
-      "static/chunks/171.0d4dc4b59fc5714a.js"
+      "static/chunks/114.4f3a342de11279ed.js"
     ]
+  },
+  "app/student/page.tsx -> @/components/SpotifyProgressCards": {
+    "id": 5919,
+    "files": [
+      "static/chunks/285-4c5723b89611ebf3.js",
+      "static/chunks/919.603d0952abaaf9b7.js"
+    ]
+  },
+  "app/student/page.tsx -> @/components/StreakDisplay": {
+    "id": 4173,
+    "files": [
+      "static/chunks/173.352216fdf61cfd33.js"
+    ]
+  },
+  "app/student/page.tsx -> @/components/TimelineMemoryMap": {
+    "id": 9759,
+    "files": [
+      "static/chunks/759.1d91d5351fdb1ba0.js"
+    ]
+  },
+  "app/student/page.tsx -> @/lib/supabase/client": {
+    "id": 7925,
+    "files": []
   },
   "app/student/tabs/DiscoverTab.tsx -> @/components/StudentDiscoveries": {
     "id": 5322,
@@ -78,9 +151,9 @@
     ]
   },
   "app/student/tabs/ProgressTab.tsx -> @/components/GrowthJournal": {
-    "id": 1846,
+    "id": 4348,
     "files": [
-      "static/chunks/846.0196cc38ad63c1ba.js"
+      "static/chunks/348.ea28705f2769aa1a.js"
     ]
   },
   "app/student/tabs/WorldTab.tsx -> @/components/VoxelWorld": {
@@ -88,8 +161,9 @@
     "files": [
       "static/chunks/ce1ab7a9.7e6a4cc2aa44ef48.js",
       "static/chunks/5aea0aea.771849600f10a3eb.js",
-      "static/chunks/601.6b25b2aee9258a19.js",
-      "static/chunks/737.f43ba8a557790b04.js"
+      "static/chunks/532.0778910bdca0f0e8.js",
+      "static/chunks/677.0365ef26c6fa3e0c.js",
+      "static/chunks/737.59a5ba7ed37f6a40.js"
     ]
   }
 }

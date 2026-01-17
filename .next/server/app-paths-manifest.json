@@ -1,13 +1,14 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/api/ai/socratic/route": "app/api/ai/socratic/route.js",
   "/api/ai/brainstorm/route": "app/api/ai/brainstorm/route.js",
-  "/api/challenges/teacher/response/route": "app/api/challenges/teacher/response/route.js",
+  "/api/ai/socratic/route": "app/api/ai/socratic/route.js",
   "/api/discoveries/route": "app/api/discoveries/route.js",
+  "/api/challenges/teacher/route": "app/api/challenges/teacher/route.js",
+  "/api/challenges/teacher/response/route": "app/api/challenges/teacher/response/route.js",
   "/api/gateway/route": "app/api/gateway/route.js",
   "/api/inventory/route": "app/api/inventory/route.js",
-  "/api/challenges/teacher/route": "app/api/challenges/teacher/route.js",
   "/api/journal/route": "app/api/journal/route.js",
+  "/login/page": "app/login/page.js",
   "/page": "app/page.js",
   "/student/page": "app/student/page.js",
   "/teacher/page": "app/teacher/page.js"
