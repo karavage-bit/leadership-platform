@@ -5,6 +5,12 @@ https://leadership-platform-flame.vercel.app/
 
 ## I AM THE MAIN BUILDER - FULL ACCOUNTABILITY
 
+## EXISTING CODEBASE (from PDF)
+- Stack: Next.js 14 + Supabase + Three.js + Anthropic Claude
+- Tables: users, classes, lessons, do_now_sessions, student_lessons, student_inventory, world_placements
+- Key Files: StudentDashboard, SocraticModal, TeacherDashboard
+- Known Bugs: client-side addToInventory, stale messages state, password_hash in users
+
 ## CONSOLIDATED REQUIREMENTS
 
 ### SECURITY (P0)
