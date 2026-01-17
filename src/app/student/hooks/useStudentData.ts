@@ -275,7 +275,7 @@ export function useStudentData(): UseStudentDataReturn {
           .from('teachers')
           .select('id')
           .eq('auth_user_id', authUser.id)
-          .single()
+          .maybeSingle()
         
         if (teacherCheck) {
           // This is a teacher - redirect to teacher dashboard

@@ -15,15 +15,6 @@
       "static/css/4f2c495856070ecc.css",
       "static/chunks/app/layout-a23df0cbe1256d3c.js"
     ],
-    "/student/page": [
-      "static/chunks/webpack-0efcc266e8b4bef4.js",
-      "static/chunks/312224a7-4fdf835ec23e5c4b.js",
-      "static/chunks/564-a3240fb3a00dddce.js",
-      "static/chunks/main-app-0df14589c492a27b.js",
-      "static/chunks/194-3798de4e31e9db8d.js",
-      "static/chunks/619-ccb8d3aca13e3c21.js",
-      "static/chunks/app/student/page-c45a1ed276518c35.js"
-    ],
     "/page": [
       "static/chunks/webpack-0efcc266e8b4bef4.js",
       "static/chunks/312224a7-4fdf835ec23e5c4b.js",
@@ -39,6 +30,15 @@
       "static/chunks/main-app-0df14589c492a27b.js",
       "static/chunks/194-3798de4e31e9db8d.js",
       "static/chunks/app/teacher/page-897e266cc7a9862e.js"
+    ],
+    "/student/page": [
+      "static/chunks/webpack-0efcc266e8b4bef4.js",
+      "static/chunks/312224a7-4fdf835ec23e5c4b.js",
+      "static/chunks/564-a3240fb3a00dddce.js",
+      "static/chunks/main-app-0df14589c492a27b.js",
+      "static/chunks/194-3798de4e31e9db8d.js",
+      "static/chunks/619-ccb8d3aca13e3c21.js",
+      "static/chunks/app/student/page-4388bfbb3c8b8121.js"
     ]
   }
 }
