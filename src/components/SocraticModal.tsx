@@ -1,41 +1,36 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { X, Send, Check } from 'lucide-react'
+import { X, Send, Check, Mic, MicOff, Flame } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-
-interface LessonData {
-  id: number
-  skill_name: string
-  compelling_question: string
-  lesson_objective: string
-  text_anchor_title: string
-  text_anchor_chapter: string
-  media_title: string
-  media_url: string
-  the_win: string
-  the_obstacle: string
-  phase_id: number
-}
 
 interface SocraticModalProps {
   type: 'do_now' | 'scenario' | 'exit_ticket'
-  lesson: LessonData | null
-  userId: string | undefined
-  classId: string | undefined
-  userName: string | undefined
+  lesson: any
+  userId: string
+  classId: string
+  userName?: string
+  classSettings?: {
+    interaction_mode: 'typing' | 'voice' | 'both'
+    ai_difficulty: 'gentle' | 'standard' | 'intense'
+    ai_persona: 'hype_man' | 'strategist' | 'sage'
+    min_responses: number
+  }
+  batteryLevel?: number
   onClose: () => void
   onComplete?: () => void
-  onScenarioComplete?: (challengePlan: string) => void
+  onScenarioComplete?: () => void
 }
 
-export default function SocraticModal({ 
-  type, 
-  lesson, 
+export default function SocraticModal({
+  type,
+  lesson,
   userId,
   classId,
   userName,
+  classSettings,
+  batteryLevel = 50,
   onClose,
   onComplete,
   onScenarioComplete
@@ -45,48 +40,94 @@ export default function SocraticModal({
   const [loading, setLoading] = useState(false)
   const [complete, setComplete] = useState(false)
   const [responseCount, setResponseCount] = useState(0)
+  const [isRecording, setIsRecording] = useState(false)
+  const [speechSupported, setSpeechSupported] = useState(false)
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
   const supabase = createClient()
 
-  const MIN_RESPONSES = 5 // Minimum exchanges required
+  const MIN_RESPONSES = classSettings?.min_responses || 5
+  const interactionMode = classSettings?.interaction_mode || 'typing'
+  const showVoice = interactionMode === 'voice' || interactionMode === 'both'
+  const showTyping = interactionMode === 'typing' || interactionMode === 'both'
 
+  // Initialize speech recognition
   useEffect(() => {
-    initializeConversation()
-  }, [type, lesson])
-
-  const initializeConversation = () => {
-    let greeting = ''
-    if (type === 'do_now') {
-      greeting = `Hey ${userName || 'there'}! 👋 Ready to warm up that brain?\n\nHere's today's question to think about:\n\n**"${lesson?.compelling_question}"**\n\nTake a moment to really think about this. What comes to mind first?`
-    } else if (type === 'scenario') {
-      greeting = `Alright ${userName || 'there'}, time to put ${lesson?.skill_name} into practice.\n\nI'm going to present you with a real-life situation. Fair warning: I won't let you off easy. I'll push back, ask hard questions, and make you think.\n\nReady to begin?`
-    } else {
-      greeting = `Let's wrap up today's learning about ${lesson?.skill_name}.\n\nWhat's one thing that stuck with you from today?`
+    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      setSpeechSupported(true)
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+      recognitionRef.current = new SpeechRecognition()
+      recognitionRef.current.continuous = false
+      recognitionRef.current.interimResults = false
+      
+      recognitionRef.current.onresult = (event) => {
+        const transcript = event.results[0][0].transcript
+        setInput(prev => prev + ' ' + transcript)
+        setIsRecording(false)
+      }
+      
+      recognitionRef.current.onerror = () => setIsRecording(false)
+      recognitionRef.current.onend = () => setIsRecording(false)
     }
     
-    setMessages([{ role: 'assistant', content: greeting }])
-  }
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort()
+      }
+    }
+  }, [])
 
+  // Initial greeting
+  useEffect(() => {
+    let greeting = ''
+    if (type === 'do_now') {
+      greeting = `Hey ${userName || 'there'}! Ready to charge up?\n\n**"${lesson?.compelling_question}"**\n\nWhat's your first instinct?`
+    } else if (type === 'scenario') {
+      greeting = `Time to put ${lesson?.skill_name} into practice. I'll challenge your thinking. Ready?`
+    } else {
+      greeting = `Let's lock in today's learning about ${lesson?.skill_name}. What stuck with you?`
+    }
+    setMessages([{ role: 'assistant', content: greeting }])
+  }, [type, lesson, userName])
+
+  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const sendMessage = async () => {
+  const toggleRecording = () => {
+    if (!recognitionRef.current) return
+    
+    if (isRecording) {
+      recognitionRef.current.stop()
+    } else {
+      recognitionRef.current.start()
+      setIsRecording(true)
+    }
+  }
+
+  const sendMessage = useCallback(async () => {
     if (!input.trim() || loading) return
 
-    // Check for low-effort responses
-    if (input.trim().split(' ').length < 3 && responseCount < MIN_RESPONSES) {
-      setMessages(prev => [...prev, 
-        { role: 'user', content: input.trim() },
-        { role: 'assistant', content: "I need more than that! Give me at least a full sentence. What are you really thinking?" }
+    const userMessage = input.trim()
+    
+    // Enforce minimum word count
+    if (userMessage.split(' ').length < 3 && responseCount < MIN_RESPONSES) {
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', content: userMessage },
+        { role: 'assistant', content: "Give me at least a full sentence. What are you really thinking?" }
       ])
       setInput('')
       return
     }
 
-    const userMessage = input.trim()
+    // FIX: Build next history BEFORE setting state (fixes stale state bug)
+    const nextHistory = [...messages, { role: 'user' as const, content: userMessage }]
+    
     setInput('')
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }])
+    setMessages(nextHistory)
     setLoading(true)
     setResponseCount(prev => prev + 1)
 
@@ -99,35 +140,49 @@ export default function SocraticModal({
           lesson_id: lesson?.id,
           student_id: userId,
           class_id: classId,
-          conversation_history: messages,
+          conversation_history: messages, // Send previous messages (not including current)
           user_message: userMessage,
           lesson_context: lesson,
           response_count: responseCount + 1,
-          min_responses: MIN_RESPONSES
+          min_responses: MIN_RESPONSES,
+          battery_level: batteryLevel,
+          ai_persona: classSettings?.ai_persona,
+          ai_difficulty: classSettings?.ai_difficulty
         })
       })
 
+      if (!response.ok) {
+        throw new Error('Network response was not ok')
+      }
+
       const data = await response.json()
-      
+
       if (data.crisis_detected) {
         setMessages(prev => [...prev, { role: 'assistant', content: data.message }])
         return
       }
-      
+
+      // Update messages with AI response
       setMessages(prev => [...prev, { role: 'assistant', content: data.message }])
-      
+
       if (data.should_complete && responseCount >= MIN_RESPONSES - 1) {
         setComplete(true)
-        
-        // Save session
-        const tableName = type === 'do_now' ? 'do_now_sessions' : 
-                          type === 'exit_ticket' ? 'exit_ticket_sessions' : 'scenario_sessions'
-        
+
+        // Save session with CORRECT conversation history
+        const tableName = type === 'do_now' ? 'do_now_sessions' 
+          : type === 'exit_ticket' ? 'exit_ticket_sessions' 
+          : 'scenario_sessions'
+
+        const fullConversation = [
+          ...nextHistory,
+          { role: 'assistant', content: data.message }
+        ]
+
         await supabase.from(tableName).insert({
           student_id: userId,
           lesson_id: lesson?.id,
           class_id: classId,
-          conversation: [...messages, { role: 'user', content: userMessage }, { role: 'assistant', content: data.message }],
+          conversation: fullConversation,
           response_count: responseCount + 1,
           completed_at: new Date().toISOString(),
           ...(type !== 'scenario' ? { date: new Date().toISOString().split('T')[0] } : {})
@@ -135,117 +190,131 @@ export default function SocraticModal({
       }
     } catch (error) {
       console.error('Error:', error)
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Connection issue. Your work is saved locally. Try again when you reconnect.' 
-      }])
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Connection unstable. Try again.' }])
     } finally {
       setLoading(false)
     }
-  }
+  }, [input, loading, messages, responseCount, type, lesson, userId, classId, batteryLevel, classSettings, MIN_RESPONSES, supabase])
 
-  const handleComplete = () => {
-    if (type === 'do_now' && onComplete) {
-      onComplete()
-    } else if (type === 'scenario' && onScenarioComplete) {
-      onScenarioComplete('')
-    } else {
-      onClose()
+  const handleComplete = async () => {
+    // Use atomic server-side completion
+    const { data, error } = await supabase.rpc('complete_step', {
+      p_student_id: userId,
+      p_lesson_id: lesson?.id,
+      p_step_type: type,
+      p_energy_earned: 15
+    })
+
+    if (error) {
+      console.error('Complete step error:', error)
     }
-  }
 
-  const titles: Record<string, string> = {
-    do_now: '🧠 Do Now',
-    scenario: '⚡ Socratic Scenario',
-    exit_ticket: '🎫 Exit Ticket'
+    if (type === 'scenario' && onScenarioComplete) {
+      onScenarioComplete()
+    } else if (onComplete) {
+      onComplete()
+    }
+    onClose()
   }
 
   return (
-    <motion.div
+    <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
     >
-      <motion.div
+      <motion.div 
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
-        className="bg-surface-900 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
+        className="bg-surface-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
       >
-        <div className="p-4 border-b border-surface-800 flex items-center justify-between">
+        {/* Header */}
+        <header className="flex items-center justify-between p-4 border-b border-surface-700">
           <div className="flex items-center gap-3">
-            <h2 className="font-semibold text-surface-100">{titles[type]}</h2>
-            <span className="text-xs text-surface-500 bg-surface-800 px-2 py-1 rounded-lg">
-              {responseCount}/{MIN_RESPONSES} exchanges
+            <span className="text-lg font-semibold">
+              {type === 'do_now' ? '⚡ Do Now' : type === 'scenario' ? '🎯 Scenario' : '🔒 Exit Ticket'}
             </span>
+            <div className="flex items-center gap-1 text-sm text-surface-400">
+              <Flame className="w-4 h-4 text-orange-500" />
+              <span>{responseCount}/{MIN_RESPONSES}</span>
+            </div>
           </div>
-          <button onClick={onClose} className="text-surface-500 hover:text-surface-300 p-1">
-            <X size={20} />
+          <button onClick={onClose} className="p-2 hover:bg-surface-700 rounded-lg">
+            <X className="w-5 h-5" />
           </button>
-        </div>
+        </header>
 
+        {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((msg, i) => (
-            <motion.div 
-              key={i} 
-              className={msg.role === 'assistant' ? 'chat-ai' : 'chat-user'}
+            <motion.div
+              key={i}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className="whitespace-pre-wrap">{msg.content}</div>
+              <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                msg.role === 'user' 
+                  ? 'bg-primary-600 text-white' 
+                  : 'bg-surface-700 text-surface-100'
+              }`}>
+                {msg.content}
+              </div>
             </motion.div>
           ))}
           {loading && (
-            <div className="chat-ai">
-              <div className="typing-indicator flex gap-1">
-                <span className="w-2 h-2 bg-surface-500 rounded-full animate-bounce" />
-                <span className="w-2 h-2 bg-surface-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                <span className="w-2 h-2 bg-surface-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
+            <div className="flex justify-start">
+              <div className="bg-surface-700 rounded-2xl px-4 py-3">
+                <span className="animate-pulse">Processing...</span>
               </div>
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-4 border-t border-surface-800">
-          {complete ? (
-            <div className="text-center">
-              <p className="text-green-400 mb-3 flex items-center justify-center gap-2">
-                <Check size={20} /> Session complete!
-              </p>
-              <motion.button 
-                onClick={handleComplete} 
-                className="px-6 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-xl font-medium transition-colors"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                {type === 'scenario' ? 'Continue to Challenge' : 'Done'}
-              </motion.button>
-            </div>
-          ) : (
+        {/* Input */}
+        <footer className="p-4 border-t border-surface-700">
+          {!complete ? (
             <div className="flex gap-2">
-              <input
-                type="text"
-                className="flex-1 bg-surface-800 border border-surface-700 rounded-xl px-4 py-2 text-white placeholder:text-surface-500 focus:border-primary-500 outline-none"
-                placeholder="Type your response (be thoughtful!)..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                disabled={loading}
-              />
-              <motion.button 
+              {showVoice && speechSupported && (
+                <button
+                  onClick={toggleRecording}
+                  className={`p-3 rounded-xl transition-colors ${
+                    isRecording ? 'bg-red-500 text-white' : 'bg-surface-700 hover:bg-surface-600'
+                  }`}
+                >
+                  {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                </button>
+              )}
+              {showTyping && (
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                  placeholder={isRecording ? "Listening..." : "Type your response..."}
+                  className="flex-1 bg-surface-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  disabled={isRecording}
+                />
+              )}
+              <button
                 onClick={sendMessage}
                 disabled={loading || !input.trim()}
-                className="px-4 py-2 bg-primary-600 hover:bg-primary-500 disabled:bg-surface-700 text-white rounded-xl transition-colors"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                className="p-3 bg-primary-600 hover:bg-primary-500 disabled:opacity-50 rounded-xl"
               >
-                <Send size={18} />
-              </motion.button>
+                <Send className="w-5 h-5" />
+              </button>
             </div>
+          ) : (
+            <button
+              onClick={handleComplete}
+              className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl font-semibold flex items-center justify-center gap-2 hover:from-green-400 hover:to-emerald-500 transition-all"
+            >
+              <Check className="w-5 h-5" />
+              Lock In & Earn Energy
+            </button>
           )}
-        </div>
+        </footer>
       </motion.div>
     </motion.div>
   )
