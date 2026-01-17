@@ -132,9 +132,16 @@ export default function SocraticModal({
     setResponseCount(prev => prev + 1)
 
     try {
+      // Get auth token for API call
+      const { data: { session } } = await supabase.auth.getSession()
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch('/api/ai/socratic', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           type,
           lesson_id: lesson?.id,
