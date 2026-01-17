@@ -268,6 +268,22 @@ export function useStudentData(): UseStudentDataReturn {
     setError(null)
     
     try {
+      // SECURITY: Check if authenticated user is a teacher - redirect them
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (authUser) {
+        const { data: teacherCheck } = await supabase
+          .from('teachers')
+          .select('id')
+          .eq('auth_user_id', authUser.id)
+          .single()
+        
+        if (teacherCheck) {
+          // This is a teacher - redirect to teacher dashboard
+          router.push('/teacher')
+          return
+        }
+      }
+
       const storedUserId = localStorage.getItem('leadership_user_id')
       const storedUserName = localStorage.getItem('leadership_user_name')
       const storedClassId = localStorage.getItem('leadership_class_id')

@@ -8,7 +8,7 @@ import {
   Users, BookOpen, AlertTriangle, ChevronRight, Check, X,
   LogOut, Clock, Award, MessageSquare, TrendingUp, Eye,
   Sparkles, Bell, Settings, ChevronDown, Play, Pause,
-  BarChart3, Calendar, Filter, Search, RefreshCw
+  BarChart3, Calendar, Filter, Search, RefreshCw, Plus, Edit3
 } from 'lucide-react'
 
 interface ClassData {
@@ -68,7 +68,7 @@ export default function TeacherDashboard() {
   const [crisisAlerts, setCrisisAlerts] = useState<CrisisAlert[]>([])
   const [doNowStats, setDoNowStats] = useState<DoNowStats>({ completed: 0, total: 0 })
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'students' | 'alerts' | 'settings'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'students' | 'curriculum' | 'alerts' | 'settings'>('overview')
   const [showClassDropdown, setShowClassDropdown] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -350,6 +350,7 @@ export default function TeacherDashboard() {
             <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={BarChart3} label="Overview" />
             <TabButton active={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} icon={Award} label="Reviews" badge={pendingReviews.length} />
             <TabButton active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={Users} label="Students" />
+            <TabButton active={activeTab === 'curriculum'} onClick={() => setActiveTab('curriculum')} icon={BookOpen} label="Curriculum" />
             <TabButton active={activeTab === 'alerts'} onClick={() => setActiveTab('alerts')} icon={AlertTriangle} label="Alerts" badge={crisisAlerts.length} urgent={crisisAlerts.length > 0} />
             <TabButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={Settings} label="Settings" />
           </div>
@@ -380,6 +381,13 @@ export default function TeacherDashboard() {
           {activeTab === 'students' && (
             <StudentsTab 
               students={students}
+              classId={selectedClass?.id}
+              currentLessonId={currentLesson?.id || 1}
+            />
+          )}
+
+          {activeTab === 'curriculum' && (
+            <CurriculumTab 
               classId={selectedClass?.id}
               currentLessonId={currentLesson?.id || 1}
             />
@@ -828,6 +836,234 @@ function AlertsTab({ alerts, onMarkRead }: { alerts: CrisisAlert[]; onMarkRead: 
           ))}
         </div>
       )}
+    </motion.div>
+  )
+}
+
+function CurriculumTab({ classId, currentLessonId }: { classId: string | undefined; currentLessonId: number }) {
+  const [lessons, setLessons] = useState<any[]>([])
+  const [scenarios, setScenarios] = useState<Record<number, any>>({})
+  const [challenges, setChallenges] = useState<Record<number, any>>({})
+  const [selectedLesson, setSelectedLesson] = useState<any | null>(null)
+  const [editMode, setEditMode] = useState<'scenario' | 'challenge' | null>(null)
+  const [editText, setEditText] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [filterPhase, setFilterPhase] = useState<number | null>(null)
+  const supabase = createClient()
+
+  useEffect(() => {
+    loadCurriculum()
+  }, [])
+
+  const loadCurriculum = async () => {
+    const { data: lessonsData } = await supabase
+      .from('lessons')
+      .select('*')
+      .order('id')
+    setLessons(lessonsData || [])
+
+    const { data: scenariosData } = await supabase.from('scenarios').select('*')
+    const scenarioMap: Record<number, any> = {}
+    scenariosData?.forEach(s => { scenarioMap[s.lesson_id] = s })
+    setScenarios(scenarioMap)
+
+    const { data: challengesData } = await supabase.from('challenges').select('*')
+    const challengeMap: Record<number, any> = {}
+    challengesData?.forEach(c => { challengeMap[c.lesson_id] = c })
+    setChallenges(challengeMap)
+  }
+
+  const openEditor = (lesson: any, mode: 'scenario' | 'challenge') => {
+    setSelectedLesson(lesson)
+    setEditMode(mode)
+    if (mode === 'scenario') {
+      setEditText(scenarios[lesson.id]?.situation_prompt || '')
+    } else {
+      setEditText(challenges[lesson.id]?.description || '')
+    }
+  }
+
+  const saveContent = async () => {
+    if (!selectedLesson || !editMode) return
+    setSaving(true)
+    try {
+      if (editMode === 'scenario') {
+        const existing = scenarios[selectedLesson.id]
+        if (existing) {
+          await supabase.from('scenarios').update({ situation_prompt: editText }).eq('id', existing.id)
+        } else {
+          await supabase.from('scenarios').insert({
+            lesson_id: selectedLesson.id,
+            situation_prompt: editText,
+            reflection_questions: ['What did you learn?', 'How can you apply this?']
+          })
+        }
+      } else {
+        const existing = challenges[selectedLesson.id]
+        if (existing) {
+          await supabase.from('challenges').update({ description: editText }).eq('id', existing.id)
+        } else {
+          await supabase.from('challenges').insert({
+            lesson_id: selectedLesson.id,
+            description: editText,
+            difficulty: 'medium',
+            xp_reward: 50,
+            building_block_reward: 'flower'
+          })
+        }
+      }
+      await loadCurriculum()
+      setEditMode(null)
+      setSelectedLesson(null)
+    } catch (error) {
+      console.error('Error saving:', error)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const phaseColors: Record<number, string> = { 1: 'care', 2: 'creation', 3: 'courage', 4: 'community' }
+  const phaseNames: Record<number, string> = { 1: 'Hardware', 2: 'Direction', 3: 'Toolbelt', 4: 'Blueprint' }
+
+  const filteredLessons = filterPhase ? lessons.filter(l => l.phase_id === filterPhase) : lessons
+
+  return (
+    <motion.div key="curriculum" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h2 className="text-2xl font-bold text-surface-100">Curriculum Manager</h2>
+        <div className="flex gap-2">
+          <button onClick={() => setFilterPhase(null)} className={`btn btn-sm ${!filterPhase ? 'btn-primary' : 'btn-secondary'}`}>All</button>
+          {[1, 2, 3, 4].map(p => (
+            <button key={p} onClick={() => setFilterPhase(p)} className={`btn btn-sm ${filterPhase === p ? 'btn-primary' : 'btn-secondary'}`}>
+              Phase {p}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-4">
+        {filteredLessons.map(lesson => {
+          const hasScenario = !!scenarios[lesson.id]?.situation_prompt
+          const hasChallenge = !!challenges[lesson.id]?.description
+          const isCurrent = lesson.id === currentLessonId
+
+          return (
+            <div key={lesson.id} className={`card p-4 ${isCurrent ? 'ring-2 ring-primary-500' : ''}`}>
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="flex-1 min-w-[200px]">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <span className={`badge badge-${phaseColors[lesson.phase_id]}`}>
+                      {phaseNames[lesson.phase_id]}
+                    </span>
+                    <span className="text-surface-500 text-sm">Lesson {lesson.id}</span>
+                    {isCurrent && <span className="badge bg-primary-500 text-white">Current</span>}
+                  </div>
+                  <h3 className="font-semibold text-surface-100 mb-1">{lesson.skill_name}</h3>
+                  <p className="text-surface-400 text-sm italic">"{lesson.compelling_question}"</p>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => openEditor(lesson, 'scenario')}
+                    className={`btn btn-sm ${hasScenario ? 'btn-secondary' : 'bg-courage/20 text-courage border border-courage/30'}`}
+                  >
+                    {hasScenario ? '✓ Scenario' : '+ Scenario'}
+                  </button>
+                  <button
+                    onClick={() => openEditor(lesson, 'challenge')}
+                    className={`btn btn-sm ${hasChallenge ? 'btn-secondary' : 'bg-creation/20 text-creation border border-creation/30'}`}
+                  >
+                    {hasChallenge ? '✓ Challenge' : '+ Challenge'}
+                  </button>
+                </div>
+              </div>
+
+              {(hasScenario || hasChallenge) && (
+                <div className="mt-4 pt-4 border-t border-surface-700 grid md:grid-cols-2 gap-4">
+                  {hasScenario && (
+                    <div className="p-3 bg-surface-800/50 rounded-lg">
+                      <span className="text-xs text-surface-500 uppercase tracking-wide">Scenario</span>
+                      <p className="text-surface-300 text-sm mt-1 line-clamp-2">{scenarios[lesson.id]?.situation_prompt}</p>
+                    </div>
+                  )}
+                  {hasChallenge && (
+                    <div className="p-3 bg-surface-800/50 rounded-lg">
+                      <span className="text-xs text-surface-500 uppercase tracking-wide">Challenge</span>
+                      <p className="text-surface-300 text-sm mt-1 line-clamp-2">{challenges[lesson.id]?.description}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Edit Modal */}
+      <AnimatePresence>
+        {editMode && selectedLesson && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+            onClick={() => setEditMode(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-surface-900 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-surface-800 flex items-center justify-between sticky top-0 bg-surface-900 z-10">
+                <div>
+                  <h2 className="font-semibold text-surface-100">
+                    {editMode === 'scenario' ? 'Edit Scenario' : 'Edit Challenge'}
+                  </h2>
+                  <p className="text-sm text-surface-500">Lesson {selectedLesson.id}: {selectedLesson.skill_name}</p>
+                </div>
+                <button onClick={() => setEditMode(null)} className="text-surface-500 hover:text-surface-300 p-1">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="label">
+                    {editMode === 'scenario' ? 'Situation Prompt' : 'Challenge Description'}
+                  </label>
+                  <textarea
+                    className="input"
+                    rows={8}
+                    placeholder={editMode === 'scenario' 
+                      ? 'Describe a real-world situation that tests this skill...'
+                      : 'Describe the real-life challenge students should complete...'}
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                  />
+                  <p className="text-xs text-surface-500 mt-2">
+                    {editMode === 'scenario' 
+                      ? 'This situation will be presented to students in the Scenario pathway for them to analyze and respond to.'
+                      : 'This challenge encourages students to practice the skill in their real life and submit evidence of completion.'}
+                  </p>
+                </div>
+
+                <div className="flex gap-3">
+                  <button onClick={() => setEditMode(null)} className="btn btn-secondary flex-1">Cancel</button>
+                  <button 
+                    onClick={saveContent} 
+                    disabled={saving || !editText.trim()}
+                    className="btn btn-primary flex-1"
+                  >
+                    {saving ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }
