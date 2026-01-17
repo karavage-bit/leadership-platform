@@ -147,18 +147,30 @@ export function useStudentData(): UseStudentDataReturn {
   
   // Load inventory items
   const loadInventoryItems = useCallback(async (studentId: string) => {
+    console.log('[DEBUG] Loading inventory for studentId:', studentId)
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('placement_inventory')
         .select('item_type, quantity')
         .eq('student_id', studentId)
         .gt('quantity', 0)
       
-      if (data) {
-        setInventoryItems(data.map(item => ({
+      console.log('[DEBUG] Inventory query result:', { data, error })
+      
+      if (error) {
+        console.error('[DEBUG] Inventory query error:', error)
+        return
+      }
+      
+      if (data && data.length > 0) {
+        const mappedItems = data.map(item => ({
           type: item.item_type,
           count: item.quantity
-        })))
+        }))
+        console.log('[DEBUG] Setting inventoryItems:', mappedItems)
+        setInventoryItems(mappedItems)
+      } else {
+        console.log('[DEBUG] No inventory items found')
       }
     } catch (e) {
       console.error('Error loading inventory:', e)
