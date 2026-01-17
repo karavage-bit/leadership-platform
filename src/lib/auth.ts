@@ -63,7 +63,7 @@ export async function validateUser(request: NextRequest): Promise<AuthResult> {
     if (!userId && (request.method === 'POST' || request.method === 'PATCH')) {
       try {
         const body = await request.clone().json()
-        userId = body.studentId || body.userId || body.teacherId
+        userId = body.studentId || body.student_id || body.userId || body.user_id || body.teacherId || body.teacher_id
       } catch {
         // Body might not be JSON
       }
