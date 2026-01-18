@@ -13,6 +13,12 @@ import {
 } from 'lucide-react'
 import TeacherClassSettings from '@/components/TeacherClassSettings'
 import TeacherAnalytics from '@/components/TeacherAnalytics'
+import AnnouncementsManager from '@/components/teacher/AnnouncementsManager'
+import MissionsManager from '@/components/teacher/MissionsManager'
+import MediaLessonsManager from '@/components/teacher/MediaLessonsManager'
+import StudentRosterManager from '@/components/teacher/StudentRosterManager'
+import LiveActivityFeed from '@/components/teacher/LiveActivityFeed'
+import { Video } from 'lucide-react'
 
 interface ClassData {
   id: string
@@ -71,7 +77,7 @@ export default function TeacherDashboard() {
   const [crisisAlerts, setCrisisAlerts] = useState<CrisisAlert[]>([])
   const [doNowStats, setDoNowStats] = useState<DoNowStats>({ completed: 0, total: 0 })
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'students' | 'curriculum' | 'donow' | 'conversations' | 'worlds' | 'metrics' | 'alerts' | 'settings'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'students' | 'curriculum' | 'donow' | 'conversations' | 'worlds' | 'metrics' | 'alerts' | 'settings' | 'announcements' | 'missions' | 'media' | 'roster' | 'activity'>('overview')
   const [showClassDropdown, setShowClassDropdown] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -359,6 +365,11 @@ export default function TeacherDashboard() {
             <TabButton active={activeTab === 'metrics'} onClick={() => setActiveTab('metrics')} icon={Activity} label="Metrics" />
             <TabButton active={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} icon={Award} label="Reviews" badge={pendingReviews.length} />
             <TabButton active={activeTab === 'alerts'} onClick={() => setActiveTab('alerts')} icon={AlertTriangle} label="Alerts" badge={crisisAlerts.length} urgent={crisisAlerts.length > 0} />
+            <TabButton active={activeTab === 'announcements'} onClick={() => setActiveTab('announcements')} icon={Bell} label="Announcements" />
+            <TabButton active={activeTab === 'missions'} onClick={() => setActiveTab('missions')} icon={Target} label="Missions" />
+            <TabButton active={activeTab === 'media'} onClick={() => setActiveTab('media')} icon={Video} label="Media" />
+            <TabButton active={activeTab === 'roster'} onClick={() => setActiveTab('roster')} icon={Users} label="Roster" />
+            <TabButton active={activeTab === 'activity'} onClick={() => setActiveTab('activity')} icon={Activity} label="Activity" />
             <TabButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={Settings} label="Settings" />
           </div>
         </div>
@@ -441,6 +452,36 @@ export default function TeacherDashboard() {
               selectedClass={selectedClass}
               classes={classes}
             />
+          )}
+
+          {activeTab === 'announcements' && selectedClass && user && (
+            <motion.div key="announcements" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              <AnnouncementsManager classId={selectedClass.id} teacherId={user.id} />
+            </motion.div>
+          )}
+
+          {activeTab === 'missions' && selectedClass && user && (
+            <motion.div key="missions" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              <MissionsManager classId={selectedClass.id} teacherId={user.id} studentCount={students.length} />
+            </motion.div>
+          )}
+
+          {activeTab === 'media' && selectedClass && user && (
+            <motion.div key="media" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              <MediaLessonsManager classId={selectedClass.id} teacherId={user.id} studentCount={students.length} />
+            </motion.div>
+          )}
+
+          {activeTab === 'roster' && selectedClass && (
+            <motion.div key="roster" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              <StudentRosterManager classId={selectedClass.id} />
+            </motion.div>
+          )}
+
+          {activeTab === 'activity' && selectedClass && (
+            <motion.div key="activity" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              <LiveActivityFeed classId={selectedClass.id} students={students} />
+            </motion.div>
           )}
         </AnimatePresence>
       </main>

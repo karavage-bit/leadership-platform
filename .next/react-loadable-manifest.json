@@ -54,13 +54,13 @@
       "static/chunks/ce1ab7a9.7e6a4cc2aa44ef48.js",
       "static/chunks/47cd497d.a8b3785c6964e786.js",
       "static/chunks/532.0778910bdca0f0e8.js",
-      "static/chunks/729.a733047793af8e0b.js"
+      "static/chunks/729.d4407f2a16a9d22e.js"
     ]
   },
   "app/student/page.tsx -> @/components/DailyUnmask": {
-    "id": 999,
+    "id": 3229,
     "files": [
-      "static/chunks/999.92771554120c3e0c.js"
+      "static/chunks/229.5023a75cea9abda7.js"
     ]
   },
   "app/student/page.tsx -> @/components/DeadServerOnboarding": {
@@ -94,7 +94,7 @@
       "static/chunks/ce1ab7a9.7e6a4cc2aa44ef48.js",
       "static/chunks/47cd497d.a8b3785c6964e786.js",
       "static/chunks/532.0778910bdca0f0e8.js",
-      "static/chunks/801.3757b294387c6429.js"
+      "static/chunks/801.85ecaaa06a28c9d6.js"
     ]
   },
   "app/student/page.tsx -> @/components/PrivateNotes": {
@@ -106,7 +106,7 @@
   "app/student/page.tsx -> @/components/SocraticModal": {
     "id": 5626,
     "files": [
-      "static/chunks/114.4f3a342de11279ed.js"
+      "static/chunks/114.396f3db9a61a2de4.js"
     ]
   },
   "app/student/page.tsx -> @/components/SpotifyProgressCards": {
@@ -125,7 +125,7 @@
   "app/student/page.tsx -> @/components/TimelineMemoryMap": {
     "id": 9759,
     "files": [
-      "static/chunks/759.1d91d5351fdb1ba0.js"
+      "static/chunks/759.de6e2332d147e261.js"
     ]
   },
   "app/student/page.tsx -> @/lib/supabase/client": {
@@ -133,15 +133,15 @@
     "files": []
   },
   "app/student/tabs/DiscoverTab.tsx -> @/components/StudentDiscoveries": {
-    "id": 5322,
+    "id": 9444,
     "files": [
-      "static/chunks/322.6ace8ca25011426c.js"
+      "static/chunks/444.fda53e55d35b0ace.js"
     ]
   },
   "app/student/tabs/DiscoverTab.tsx -> @/components/TeacherChallenges": {
-    "id": 7917,
+    "id": 5534,
     "files": [
-      "static/chunks/917.cf4281b315ee23ab.js"
+      "static/chunks/534.47ab5f1bebc7a66f.js"
     ]
   },
   "app/student/tabs/ProgressTab.tsx -> @/components/ClassConnectionMap": {
@@ -153,7 +153,7 @@
   "app/student/tabs/ProgressTab.tsx -> @/components/GrowthJournal": {
     "id": 4348,
     "files": [
-      "static/chunks/348.ea28705f2769aa1a.js"
+      "static/chunks/348.59c40d77fc0a44d3.js"
     ]
   },
   "app/student/tabs/WorldTab.tsx -> @/components/VoxelWorld": {

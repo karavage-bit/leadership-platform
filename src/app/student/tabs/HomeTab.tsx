@@ -8,6 +8,9 @@ import {
 } from 'lucide-react'
 import type { LessonData, ProgressData, WorldData } from '../types'
 import Link from 'next/link'
+import AnnouncementsBanner from '@/components/student/AnnouncementsBanner'
+import MissionsPanel from '@/components/student/MissionsPanel'
+import MediaLessonsPanel from '@/components/student/MediaLessonsPanel'
 
 interface HomeTabProps {
   lesson: LessonData | null
@@ -18,6 +21,9 @@ interface HomeTabProps {
   onChallengeClick: () => void
   onTextAnchorComplete: () => void
   onMediaComplete: () => void
+  classId?: string
+  studentId?: string
+  onOpenSocraticForMedia?: (prompt: string, lessonId: string, title: string) => void
 }
 
 const phaseNames = {
@@ -42,7 +48,10 @@ export default function HomeTab({
   onScenarioClick,
   onChallengeClick,
   onTextAnchorComplete,
-  onMediaComplete
+  onMediaComplete,
+  classId,
+  studentId,
+  onOpenSocraticForMedia
 }: HomeTabProps) {
   // Calculate if all tasks are complete
   const allTasksComplete = (
@@ -86,6 +95,9 @@ export default function HomeTab({
       exit={{ opacity: 0, y: -20 }}
       className="space-y-6"
     >
+      {/* Announcements Banner */}
+      {classId && <AnnouncementsBanner classId={classId} />}
+
       {/* Do Now Card - Primary CTA */}
       {!progress?.do_now_complete && (
         <motion.div 
@@ -308,6 +320,20 @@ export default function HomeTab({
             </div>
           ))}
         </div>
+      )}
+
+      {/* Missions */}
+      {classId && studentId && (
+        <MissionsPanel classId={classId} studentId={studentId} />
+      )}
+
+      {/* Media Lessons */}
+      {classId && studentId && (
+        <MediaLessonsPanel 
+          classId={classId} 
+          studentId={studentId} 
+          onOpenSocratic={onOpenSocraticForMedia}
+        />
       )}
 
       {/* Daily Stats */}

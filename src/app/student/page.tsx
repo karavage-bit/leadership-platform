@@ -158,19 +158,18 @@ export default function StudentDashboard() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-surface-950 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/20 to-slate-950 flex items-center justify-center">
         <div className="text-center">
           <motion.div 
-            className="text-6xl mb-6"
-            animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            className="relative w-20 h-20 mx-auto mb-6"
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           >
-            🌱
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-400 to-violet-600 opacity-60 blur-xl" />
+            <div className="absolute inset-2 rounded-full bg-gradient-to-br from-purple-300 to-violet-500" />
+            <div className="absolute inset-4 rounded-full bg-gradient-to-br from-white/30 to-transparent" />
           </motion.div>
-          <div className="loading-dots justify-center mb-4">
-            <span></span><span></span><span></span>
-          </div>
-          <p className="text-surface-400 gradient-text font-medium">Loading your journey...</p>
+          <p className="text-purple-300/70 font-mono text-sm animate-pulse">{'>'} SYNCING CORE...</p>
         </div>
       </div>
     )
@@ -179,7 +178,7 @@ export default function StudentDashboard() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-surface-950 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/20 to-slate-950 flex items-center justify-center p-4">
         <div className="card p-8 max-w-md text-center">
           <div className="text-4xl mb-4">⚠️</div>
           <h2 className="text-xl font-bold text-white mb-2">Something went wrong</h2>
@@ -196,20 +195,35 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-950">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-950 via-purple-950/20 to-slate-950">
+      {/* Floating Particles Background */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        {[...Array(25)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-purple-400/30 rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
+              animationDelay: `${Math.random() * 2}s`
+            }}
+          />
+        ))}
+      </div>
       {/* Header */}
-      <header className="sticky top-0 z-40 glass-card rounded-none border-t-0 border-x-0">
+      <header className="sticky top-0 z-40 backdrop-blur-xl bg-slate-900/80 border-b border-purple-500/20">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <motion.div 
-              className="text-3xl"
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            >
-              🌱
-            </motion.div>
+            {/* Battery Orb */}
+            <div className="relative w-10 h-10">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-400 to-violet-600 opacity-60 blur-md animate-pulse" />
+              <div className="absolute inset-1 rounded-full bg-gradient-to-br from-purple-300 to-violet-500 flex items-center justify-center">
+                <span className="text-xs font-bold text-white">{batteryLevel}%</span>
+              </div>
+            </div>
             <div>
-              <h1 className="font-bold text-surface-100 text-lg">Leadership 2.0</h1>
+              <h1 className="font-bold text-white text-lg tracking-wide">RADIANCE</h1>
               <p className="text-xs text-surface-500">
                 Phase {lesson?.phase_id}: {phaseNames[lesson?.phase_id as keyof typeof phaseNames]}
               </p>
@@ -253,7 +267,7 @@ export default function StudentDashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 py-6 pb-24">
+      <main className="relative z-10 max-w-6xl mx-auto px-4 py-6 pb-24">
         <AnimatePresence mode="wait">
           {activeTab === 'home' && (
             <HomeTab 
@@ -265,6 +279,8 @@ export default function StudentDashboard() {
               onChallengeClick={() => setShowChallenge(true)}
               onTextAnchorComplete={markTextAnchorComplete}
               onMediaComplete={markMediaComplete}
+              classId={user?.class_id}
+              studentId={user?.id}
             />
           )}
 
@@ -349,11 +365,11 @@ export default function StudentDashboard() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-surface-900/95 backdrop-blur-md border-t border-surface-800 z-50">
+      <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-purple-500/20 z-50">
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex items-center justify-around py-2">
             <NavButton icon={Home} label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
-            <NavButton icon={Sparkles} label="World" active={activeTab === 'world'} onClick={() => setActiveTab('world')} />
+            <NavButton icon={Sparkles} label="Core" active={activeTab === 'world'} onClick={() => setActiveTab('world')} />
             <NavButton icon={Users} label="Commons" active={activeTab === 'commons'} onClick={() => setActiveTab('commons')} badge={helpRequests.length} />
             <NavButton icon={Star} label="Discover" active={activeTab === 'discover'} onClick={() => setActiveTab('discover')} />
             <NavButton icon={Trophy} label="Progress" active={activeTab === 'progress'} onClick={() => setActiveTab('progress')} />
@@ -608,10 +624,10 @@ function NavButton({
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all relative hover-scale ${
+      className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all relative ${
         active 
-          ? 'text-primary-400 bg-primary-500/10 tab-glow-active' 
-          : 'text-surface-500 hover:text-surface-300'
+          ? 'text-purple-400 bg-purple-500/20 shadow-[0_0_15px_rgba(147,51,234,0.3)]' 
+          : 'text-slate-400 hover:text-purple-300'
       }`}
     >
       <Icon size={22} />
